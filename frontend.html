@@ -95,24 +95,29 @@
       border: 1px solid var(--line);
       overflow: hidden;
       background: #dbeafe;
+      position: relative;
+      z-index: 1;
     }
     .map-stage {
       position: relative;
+      isolation: isolate;
     }
     .map-overlay {
       position: absolute;
-      inset: 18px;
-      z-index: 15;
-      display: grid;
-      align-content: start;
-      justify-items: end;
+      inset: 0;
+      z-index: 5000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
       pointer-events: none;
+      padding: 18px;
     }
     .map-overlay.hidden {
       display: none;
     }
     .overlay-card {
-      width: min(420px, calc(100vw - 72px));
+      width: min(960px, calc(100vw - 72px));
+      max-height: calc(100% - 36px);
       border-radius: 16px;
       overflow: hidden;
       border: 1px solid rgba(255,255,255,0.28);
@@ -148,6 +153,7 @@
     }
     .site-meta strong { color: var(--ink); }
     .scenario-video {
+      position: relative;
       width: 100%;
       aspect-ratio: 16 / 9;
       border-radius: 12px;
@@ -160,6 +166,20 @@
       height: 100%;
       object-fit: cover;
       display: block;
+    }
+    .scenario-video img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+      background: #000;
+    }
+    .scenario-box {
+      position: absolute;
+      border: 2px solid #ef4444;
+      box-shadow: 0 0 0 9999px rgba(15, 23, 42, 0.12) inset;
+      pointer-events: none;
+      border-radius: 6px;
     }
     .event-banner {
       position: fixed;
@@ -257,6 +277,18 @@
     .btn-primary { background: var(--brand); color: #fff; border-color: var(--brand); }
     .btn-accent { background: var(--accent); color: #fff; border-color: var(--accent); }
     .btn-danger { background: var(--danger); color: #fff; border-color: var(--danger); }
+    .scenario-btn {
+      background: #fff;
+      color: var(--ink);
+      border-color: var(--line);
+      transition: all 0.18s ease;
+    }
+    .scenario-btn.active {
+      background: var(--danger);
+      color: #fff;
+      border-color: var(--danger);
+      box-shadow: 0 0 0 2px rgba(220, 38, 38, 0.2);
+    }
 
     .video-panel {
       border: 1px solid var(--line);
@@ -339,12 +371,12 @@
       .sidebar { position: static; }
       .site-main-map { min-height: 420px; height: 56vh; }
       .map-overlay {
-        inset: auto 10px 10px 10px;
-        align-content: end;
-        justify-items: stretch;
+        inset: 0;
+        padding: 10px;
       }
       .overlay-card {
         width: 100%;
+        max-height: calc(100% - 20px);
       }
       .web-grid, .row2 { grid-template-columns: 1fr; }
       .split { grid-template-columns: 1fr; }
@@ -379,12 +411,12 @@
           <article class="side-box">
             <h3>사고 감지 테스트</h3>
             <div class="side-body stack">
-              <button id="scenarioFire" class="btn-danger">화재 감지 테스트</button>
-              <button id="scenarioWrongWay">역주행 감지 테스트</button>
-              <button id="scenarioTrafficJam">교통체증 감지 테스트</button>
-              <button id="scenarioFloating">부유물 감지 테스트</button>
-              <button id="scenarioAbandoned">부화물 감지 테스트</button>
-              <button id="scenarioEmergency">긴급차량 감지 테스트</button>
+              <button id="scenarioFire" class="scenario-btn active">화재 감지 테스트</button>
+              <button id="scenarioWrongWay" class="scenario-btn">역주행 감지 테스트</button>
+              <button id="scenarioTrafficJam" class="scenario-btn">교통체증 감지 테스트</button>
+              <button id="scenarioFloating" class="scenario-btn">부유물 감지 테스트</button>
+              <button id="scenarioAbandoned" class="scenario-btn">부화물 감지 테스트</button>
+              <button id="scenarioEmergency" class="scenario-btn">긴급차량 감지 테스트</button>
             </div>
           </article>
 
@@ -422,7 +454,9 @@
                     </div>
                     <div class="overlay-body">
                       <div class="scenario-video" id="scenarioPreview">
-                        <video id="scenarioVideo" muted loop playsinline controls></video>
+                        <video id="scenarioVideo" muted playsinline controls></video>
+                        <img id="scenarioStream" class="hidden" alt="실시간 감지 스트림" />
+                        <div id="scenarioBox" class="scenario-box hidden"></div>
                       </div>
                       <div id="scenarioResult" class="log"></div>
                     </div>
@@ -543,6 +577,7 @@
       activeStreamRequestId: 0,
       cctvKeyword: "",
       cctvRegion: "",
+      scenarioCloseTimer: null,
     };
 
     const scenarioMap = {
@@ -564,7 +599,7 @@
       floating_object: {
         label: "부유물",
         endpoint: "/abandoned-object/detect-floating",
-        video: "https://storage.googleapis.com/gtv-videos-bucket/sample/ForBiggerFun.mp4",
+        video: "/abandoned-object/floating-video",
       },
       abandoned_object: {
         label: "부화물",
@@ -576,6 +611,15 @@
         endpoint: "/emergency-vehicle/detect",
         video: "https://storage.googleapis.com/gtv-videos-bucket/sample/ForBiggerEscapes.mp4",
       },
+    };
+
+    const fallbackScenarioBoxes = {
+      fire: [{ x: 0.38, y: 0.28, w: 0.22, h: 0.32 }],
+      wrong_way: [{ x: 0.42, y: 0.54, w: 0.18, h: 0.24 }],
+      traffic_jam: [{ x: 0.18, y: 0.48, w: 0.56, h: 0.34 }],
+      floating_object: [{ x: 0.35, y: 0.38, w: 0.28, h: 0.22 }],
+      abandoned_object: [{ x: 0.44, y: 0.56, w: 0.18, h: 0.22 }],
+      emergency_vehicle: [{ x: 0.28, y: 0.44, w: 0.24, h: 0.24 }],
     };
 
     async function apiGet(url) {
@@ -604,9 +648,36 @@
       banner.textContent = text;
       banner.classList.remove("hidden");
       clearTimeout(showEventBanner._timer);
-      showEventBanner._timer = setTimeout(() => {
-        banner.classList.add("hidden");
-      }, 4000);
+    }
+
+    function hideEventBanner() {
+      const banner = document.getElementById("eventBanner");
+      if (!banner) return;
+      clearTimeout(showEventBanner._timer);
+      banner.classList.add("hidden");
+    }
+
+    function setActiveScenarioButton(type) {
+      const mapping = {
+        fire: "scenarioFire",
+        wrong_way: "scenarioWrongWay",
+        traffic_jam: "scenarioTrafficJam",
+        floating_object: "scenarioFloating",
+        abandoned_object: "scenarioAbandoned",
+        emergency_vehicle: "scenarioEmergency",
+      };
+
+      const ids = Object.values(mapping);
+      for (const id of ids) {
+        const btn = document.getElementById(id);
+        if (btn) btn.classList.remove("active");
+      }
+
+      const activeId = mapping[type];
+      if (activeId) {
+        const activeBtn = document.getElementById(activeId);
+        if (activeBtn) activeBtn.classList.add("active");
+      }
     }
 
     function openScenarioOverlay(title) {
@@ -619,10 +690,89 @@
     function closeScenarioOverlay() {
       const overlay = document.getElementById("scenarioOverlay");
       const video = document.getElementById("scenarioVideo");
+      const streamImg = document.getElementById("scenarioStream");
       if (video) {
         video.pause();
+        video.removeAttribute("src");
+        video.load();
+        video.classList.remove("hidden");
       }
+      if (streamImg) {
+        streamImg.classList.add("hidden");
+        streamImg.removeAttribute("src");
+      }
+      if (state.scenarioCloseTimer) {
+        clearTimeout(state.scenarioCloseTimer);
+        state.scenarioCloseTimer = null;
+      }
+      renderScenarioBox([]);
+      hideEventBanner();
       if (overlay) overlay.classList.add("hidden");
+    }
+
+    async function playScenarioVideo(videoEl, src, fallbackSrc = "/abandoned-object/floating-video") {
+      if (!videoEl || !src) return;
+      const streamImg = document.getElementById("scenarioStream");
+
+      const cacheBustedSrc = src.includes("?") ? `${src}&v=${Date.now()}` : `${src}?v=${Date.now()}`;
+      const cacheBustedFallback = fallbackSrc.includes("?") ? `${fallbackSrc}&v=${Date.now()}` : `${fallbackSrc}?v=${Date.now()}`;
+
+      if (streamImg) {
+        streamImg.classList.add("hidden");
+        streamImg.removeAttribute("src");
+      }
+      videoEl.classList.remove("hidden");
+      videoEl.loop = false;
+      videoEl.pause();
+      videoEl.src = cacheBustedSrc;
+      videoEl.currentTime = 0;
+      videoEl.load();
+
+      videoEl.onerror = async () => {
+        if (videoEl.dataset.fallbackTried === "1") return;
+        videoEl.dataset.fallbackTried = "1";
+        videoEl.pause();
+        videoEl.src = cacheBustedFallback;
+        videoEl.currentTime = 0;
+        videoEl.load();
+        try {
+          await videoEl.play();
+        } catch (_) {
+          // Manual controls can still be used.
+        }
+      };
+
+      videoEl.dataset.fallbackTried = "0";
+      try {
+        await videoEl.play();
+      } catch (_) {
+        // Browser autoplay might block before user interaction; controls remain available.
+      }
+    }
+
+    function playFloatingRealtimeStream(streamUrl, durationSec = 0) {
+      const videoEl = document.getElementById("scenarioVideo");
+      const streamImg = document.getElementById("scenarioStream");
+      if (!videoEl || !streamImg || !streamUrl) return;
+
+      if (state.scenarioCloseTimer) {
+        clearTimeout(state.scenarioCloseTimer);
+        state.scenarioCloseTimer = null;
+      }
+
+      videoEl.pause();
+      videoEl.classList.add("hidden");
+      videoEl.removeAttribute("src");
+      videoEl.load();
+
+      streamImg.classList.remove("hidden");
+      streamImg.src = streamUrl.includes("?") ? `${streamUrl}&v=${Date.now()}` : `${streamUrl}?v=${Date.now()}`;
+
+      if (durationSec > 0) {
+        state.scenarioCloseTimer = setTimeout(() => {
+          closeScenarioOverlay();
+        }, Math.floor(durationSec * 1000) + 400);
+      }
     }
 
     async function ensureHlsLibrary() {
@@ -912,12 +1062,35 @@
       }
     }
 
-    async function callAndLog(url, label) {
+    function renderScenarioBox(boxes) {
+      const boxEl = document.getElementById("scenarioBox");
+      if (!boxEl) return;
+      if (!Array.isArray(boxes) || !boxes.length) {
+        boxEl.classList.add("hidden");
+        return;
+      }
+
+      const b = boxes[0];
+      const x = Math.max(0, Math.min(1, Number(b.x ?? 0)));
+      const y = Math.max(0, Math.min(1, Number(b.y ?? 0)));
+      const w = Math.max(0.05, Math.min(1, Number(b.w ?? 0.2)));
+      const h = Math.max(0.05, Math.min(1, Number(b.h ?? 0.2)));
+
+      boxEl.style.left = `${x * 100}%`;
+      boxEl.style.top = `${y * 100}%`;
+      boxEl.style.width = `${w * 100}%`;
+      boxEl.style.height = `${h * 100}%`;
+      boxEl.classList.remove("hidden");
+    }
+
+    async function callAndLog(url, label, bannerName = "") {
       const resultEl = document.getElementById("testResult");
       try {
         const data = await apiPost(url);
         log(resultEl, `${label} 성공: ${JSON.stringify(data)}`);
-        showEventBanner(`${label} 발생`);
+        if (bannerName) {
+          showEventBanner(`${bannerName} 감지`);
+        }
       } catch (err) {
         log(resultEl, `${label} 실패: ${err.message}`);
       }
@@ -1002,23 +1175,47 @@
       const config = scenarioMap[type];
       if (!config) return;
 
+      setActiveScenarioButton(type);
       const preview = document.getElementById("scenarioVideo");
       const result = document.getElementById("scenarioResult");
+      renderScenarioBox([]);
       openScenarioOverlay(`${config.label} 감지 테스트`);
-      preview.src = config.video;
-      preview.play().catch(() => {});
+      showEventBanner(`${config.label} 감지`);
 
       try {
         const response = await apiPost(config.endpoint);
         result.textContent = JSON.stringify(response, null, 2);
-        showEventBanner(`${config.label} 발생`);
+        if (type === "floating_object") {
+          const streamUrl = response?.details?.stream_url || "/abandoned-object/floating-stream";
+          const durationSec = Number(response?.details?.duration_sec || 0);
+          renderScenarioBox([]);
+          playFloatingRealtimeStream(streamUrl, durationSec);
+        } else {
+          await playScenarioVideo(preview, config.video, "/abandoned-object/floating-video");
+          const boxesFromApi = response?.details?.boxes || [];
+          const boxes = boxesFromApi.length ? boxesFromApi : (fallbackScenarioBoxes[type] || []);
+          renderScenarioBox(boxes);
+        }
         await loadEvents();
       } catch (err) {
         result.textContent = `${config.label} 테스트 실패: ${err.message}`;
+        hideEventBanner();
       }
     }
 
     function bindActions() {
+      const scenarioVideo = document.getElementById("scenarioVideo");
+      if (scenarioVideo) {
+        scenarioVideo.onended = () => closeScenarioOverlay();
+      }
+      document.addEventListener("keydown", (e) => {
+        const overlay = document.getElementById("scenarioOverlay");
+        if (!overlay || overlay.classList.contains("hidden")) return;
+        if (e.key === "q" || e.key === "Q") {
+          closeScenarioOverlay();
+        }
+      });
+
       document.getElementById("btnLoadStream").onclick = loadStream;
       document.getElementById("btnRefresh").onclick = async () => {
         await loadCctvs();
@@ -1067,12 +1264,12 @@
         }
       };
 
-      document.getElementById("btnDetectFire").onclick = () => callAndLog("/fire/detect", "화재 감지");
-      document.getElementById("btnDetectJam").onclick = () => callAndLog("/traffic-jam/detect", "교통체증 감지");
-      document.getElementById("btnDetectWrong").onclick = () => callAndLog("/wrong-way/detect", "역주행 감지");
-      document.getElementById("btnDetectFloating").onclick = () => callAndLog("/abandoned-object/detect-floating", "부유물 감지");
-      document.getElementById("btnDetectAbandoned").onclick = () => callAndLog("/abandoned-object/detect", "부화물 감지");
-      document.getElementById("btnDetectEmergency").onclick = () => callAndLog("/emergency-vehicle/detect", "긴급차량 감지");
+      document.getElementById("btnDetectFire").onclick = () => callAndLog("/fire/detect", "화재 감지", "화재");
+      document.getElementById("btnDetectJam").onclick = () => callAndLog("/traffic-jam/detect", "교통체증 감지", "교통체증");
+      document.getElementById("btnDetectWrong").onclick = () => callAndLog("/wrong-way/detect", "역주행 감지", "역주행");
+      document.getElementById("btnDetectFloating").onclick = () => callAndLog("/abandoned-object/detect-floating", "부유물 감지", "부유물");
+      document.getElementById("btnDetectAbandoned").onclick = () => callAndLog("/abandoned-object/detect", "부화물 감지", "부화물");
+      document.getElementById("btnDetectEmergency").onclick = () => callAndLog("/emergency-vehicle/detect", "긴급차량 감지", "긴급차량");
     }
 
     async function init() {
