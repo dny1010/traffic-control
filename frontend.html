@@ -1,0 +1,1295 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Traffic Control Frontend</title>
+  <style>
+    :root {
+      --bg: #edf2f7;
+      --ink: #132238;
+      --muted: #5c6b7d;
+      --card: #ffffff;
+      --line: #d7e1ea;
+      --brand: #0f766e;
+      --accent: #ca8a04;
+      --danger: #dc2626;
+      --ok: #2563eb;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      color: var(--ink);
+      font-family: "Pretendard", "SUIT", "Noto Sans KR", sans-serif;
+      background:
+        radial-gradient(1000px 400px at 10% -20%, #dbeafe 0%, transparent 65%),
+        radial-gradient(1000px 400px at 90% 120%, #dcfce7 0%, transparent 65%),
+        var(--bg);
+    }
+    .topbar {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      display: flex;
+      gap: 12px;
+      align-items: center;
+      justify-content: space-between;
+      padding: 14px 20px;
+      border-bottom: 1px solid var(--line);
+      background: rgba(255,255,255,0.86);
+      backdrop-filter: blur(8px);
+    }
+    .title { font-size: 18px; font-weight: 800; letter-spacing: 0.2px; }
+    .nav { display: flex; gap: 8px; flex-wrap: wrap; }
+    .nav a {
+      text-decoration: none;
+      color: var(--ink);
+      border: 1px solid var(--line);
+      background: #fff;
+      padding: 8px 12px;
+      border-radius: 10px;
+      font-size: 13px;
+      font-weight: 700;
+    }
+    .nav a.active {
+      background: var(--brand);
+      color: #fff;
+      border-color: var(--brand);
+    }
+
+    .container { padding: 16px; }
+
+    .site-shell {
+      display: grid;
+      grid-template-columns: 320px minmax(0, 1fr);
+      gap: 14px;
+      align-items: start;
+    }
+    .sidebar {
+      position: sticky;
+      top: 82px;
+      display: grid;
+      gap: 12px;
+    }
+    .side-box {
+      border: 1px solid var(--line);
+      background: var(--card);
+      border-radius: 14px;
+      box-shadow: 0 8px 22px rgba(2, 8, 23, 0.04);
+      overflow: hidden;
+    }
+    .side-box h3 {
+      margin: 0;
+      padding: 12px 14px;
+      border-bottom: 1px solid var(--line);
+      font-size: 15px;
+    }
+    .side-body { padding: 12px 14px; }
+    .stack { display: grid; gap: 8px; }
+    .stack button { width: 100%; text-align: left; }
+    .site-main-map {
+      width: 100%;
+      height: min(76vh, 840px);
+      min-height: 620px;
+      border-radius: 14px;
+      border: 1px solid var(--line);
+      overflow: hidden;
+      background: #dbeafe;
+      position: relative;
+      z-index: 1;
+    }
+    .map-stage {
+      position: relative;
+      isolation: isolate;
+    }
+    .map-overlay {
+      position: absolute;
+      inset: 0;
+      z-index: 5000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      pointer-events: none;
+      padding: 18px;
+    }
+    .map-overlay.hidden {
+      display: none;
+    }
+    .overlay-card {
+      width: min(960px, calc(100vw - 72px));
+      max-height: calc(100% - 36px);
+      border-radius: 16px;
+      overflow: hidden;
+      border: 1px solid rgba(255,255,255,0.28);
+      background: rgba(11, 18, 32, 0.94);
+      color: #fff;
+      box-shadow: 0 22px 48px rgba(2, 8, 23, 0.36);
+      pointer-events: auto;
+    }
+    .overlay-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+      padding: 12px 14px;
+      border-bottom: 1px solid rgba(255,255,255,0.12);
+      font-weight: 800;
+    }
+    .overlay-head button {
+      padding: 6px 10px;
+      border-radius: 999px;
+      border: 1px solid rgba(255,255,255,0.18);
+      background: rgba(255,255,255,0.08);
+      color: #fff;
+    }
+    .overlay-body {
+      padding: 12px 14px 14px;
+    }
+    .site-meta {
+      display: grid;
+      gap: 8px;
+      font-size: 13px;
+      color: var(--muted);
+    }
+    .site-meta strong { color: var(--ink); }
+    .scenario-video {
+      position: relative;
+      width: 100%;
+      aspect-ratio: 16 / 9;
+      border-radius: 12px;
+      overflow: hidden;
+      background: #0b1220;
+      border: 1px solid var(--line);
+    }
+    .scenario-video video {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+    .scenario-video img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+      background: #000;
+    }
+    .scenario-box {
+      position: absolute;
+      border: 2px solid #ef4444;
+      box-shadow: 0 0 0 9999px rgba(15, 23, 42, 0.12) inset;
+      pointer-events: none;
+      border-radius: 6px;
+    }
+    .event-banner {
+      position: fixed;
+      left: 50%;
+      bottom: 18px;
+      transform: translateX(-50%);
+      min-width: 280px;
+      max-width: calc(100vw - 32px);
+      padding: 12px 18px;
+      border-radius: 999px;
+      background: rgba(185, 28, 28, 0.96);
+      color: #fff;
+      font-weight: 800;
+      text-align: center;
+      box-shadow: 0 14px 40px rgba(127, 29, 29, 0.32);
+      z-index: 100;
+    }
+
+    .web-grid {
+      display: grid;
+      grid-template-columns: 1.2fr 1.6fr;
+      gap: 14px;
+      animation: rise 0.45s ease both;
+    }
+    .row2 {
+      display: grid;
+      grid-template-columns: 1.4fr 1fr;
+      gap: 14px;
+      margin-top: 14px;
+      animation: rise 0.55s ease both;
+    }
+    .card {
+      border: 1px solid var(--line);
+      background: var(--card);
+      border-radius: 14px;
+      box-shadow: 0 8px 22px rgba(2, 8, 23, 0.04);
+      overflow: hidden;
+    }
+    .card h3 {
+      margin: 0;
+      padding: 12px 14px;
+      border-bottom: 1px solid var(--line);
+      font-size: 16px;
+    }
+    .body { padding: 12px 14px; }
+    .muted { color: var(--muted); font-size: 13px; }
+
+    .split {
+      display: grid;
+      grid-template-columns: 160px 1fr;
+      gap: 12px;
+    }
+    .list {
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      overflow: auto;
+      max-height: 260px;
+      background: #fff;
+    }
+    .item {
+      border-bottom: 1px solid #edf2f7;
+      padding: 10px;
+      font-size: 13px;
+      cursor: pointer;
+    }
+    .item:last-child { border-bottom: 0; }
+    .item:hover { background: #f8fafc; }
+
+    .metrics {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+    .metric {
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      padding: 10px;
+      background: #f8fbff;
+    }
+    .metric .k { font-size: 12px; color: var(--muted); }
+    .metric .v { font-size: 18px; font-weight: 800; margin-top: 2px; }
+
+    .control { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 10px; }
+    select, input, button {
+      font: inherit;
+      padding: 8px 10px;
+      border-radius: 9px;
+      border: 1px solid var(--line);
+      background: #fff;
+    }
+    .control input { min-width: 180px; flex: 1 1 220px; }
+    .control select { min-width: 180px; flex: 1 1 220px; }
+    button { cursor: pointer; font-weight: 700; }
+    .btn-primary { background: var(--brand); color: #fff; border-color: var(--brand); }
+    .btn-accent { background: var(--accent); color: #fff; border-color: var(--accent); }
+    .btn-danger { background: var(--danger); color: #fff; border-color: var(--danger); }
+    .scenario-btn {
+      background: #fff;
+      color: var(--ink);
+      border-color: var(--line);
+      transition: all 0.18s ease;
+    }
+    .scenario-btn.active {
+      background: var(--danger);
+      color: #fff;
+      border-color: var(--danger);
+      box-shadow: 0 0 0 2px rgba(220, 38, 38, 0.2);
+    }
+
+    .video-panel {
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      width: 100%;
+      min-height: 220px;
+      height: auto;
+      aspect-ratio: 16 / 9;
+      display: grid;
+      place-items: center;
+      background: #0b1220;
+      color: #dbeafe;
+      overflow: hidden;
+    }
+    iframe { width: 100%; height: 100%; border: 0; object-fit: contain; }
+    .video-panel video {
+      width: 100%;
+      height: 100%;
+      max-width: 100%;
+      max-height: 100%;
+      object-fit: contain;
+      background: #000;
+    }
+
+    .log {
+      margin-top: 10px;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      max-height: 150px;
+      overflow: auto;
+      font-size: 12px;
+      background: #f8fafc;
+      padding: 8px;
+      line-height: 1.5;
+    }
+
+    .app-wrap {
+      max-width: 460px;
+      margin: 0 auto;
+      animation: rise 0.45s ease both;
+    }
+    .phone {
+      border: 1px solid var(--line);
+      border-radius: 22px;
+      background: #fff;
+      box-shadow: 0 12px 36px rgba(0, 0, 0, 0.09);
+      overflow: hidden;
+      margin-bottom: 14px;
+    }
+    .phone-head {
+      padding: 12px;
+      border-bottom: 1px solid var(--line);
+      font-size: 15px;
+      font-weight: 800;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .phone-body { padding: 12px; }
+    #appMap { width: 100%; height: 250px; border-radius: 12px; border: 1px solid var(--line); }
+    .event-pill {
+      display: flex;
+      justify-content: space-between;
+      border-bottom: 1px solid #eef2f7;
+      padding: 8px 2px;
+      font-size: 13px;
+    }
+    .route-grid { display: grid; gap: 8px; }
+    .route-grid input { width: 100%; }
+
+    .hidden { display: none !important; }
+
+    @keyframes rise {
+      from { opacity: 0; transform: translateY(8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    @media (max-width: 980px) {
+      .site-shell { grid-template-columns: 1fr; }
+      .sidebar { position: static; }
+      .site-main-map { min-height: 420px; height: 56vh; }
+      .map-overlay {
+        inset: 0;
+        padding: 10px;
+      }
+      .overlay-card {
+        width: 100%;
+        max-height: calc(100% - 20px);
+      }
+      .web-grid, .row2 { grid-template-columns: 1fr; }
+      .split { grid-template-columns: 1fr; }
+      .metrics { grid-template-columns: repeat(3, minmax(0,1fr)); }
+      .video-panel { min-height: 180px; }
+    }
+
+    body.app-mode .topbar {
+      display: none;
+    }
+    body.app-mode .container {
+      padding: 8px;
+    }
+    body.app-mode .app-wrap {
+      max-width: 520px;
+    }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <div class="title">교통 및 사고 관리 대시보드</div>
+    <nav class="nav">
+      <a id="linkWeb" href="/site">웹사이트</a>
+      <a href="/docs" target="_blank" rel="noreferrer">API Docs</a>
+    </nav>
+  </header>
+
+  <main class="container">
+    <section id="siteMainView">
+      <div class="site-shell">
+        <aside class="sidebar">
+          <article class="side-box">
+            <h3>사고 감지 테스트</h3>
+            <div class="side-body stack">
+              <button id="scenarioFire" class="scenario-btn active">화재 감지 테스트</button>
+              <button id="scenarioWrongWay" class="scenario-btn">역주행 감지 테스트</button>
+              <button id="scenarioTrafficJam" class="scenario-btn">교통체증 감지 테스트</button>
+              <button id="scenarioFloating" class="scenario-btn">부유물 감지 테스트</button>
+              <button id="scenarioAbandoned" class="scenario-btn">부화물 감지 테스트</button>
+              <button id="scenarioEmergency" class="scenario-btn">긴급차량 감지 테스트</button>
+            </div>
+          </article>
+
+          <article class="side-box">
+            <h3>선택한 CCTV</h3>
+            <div class="side-body">
+              <div id="selectedCctvMeta" class="site-meta">
+                <div><strong>선택된 CCTV가 없습니다.</strong></div>
+                <div>지도 마커를 클릭하면 LIVE 영상을 볼 수 있습니다.</div>
+              </div>
+              <div id="siteLivePanel" class="video-panel" style="margin-top:10px; min-height: 180px;">CCTV LIVE</div>
+              <div id="siteLiveLog" class="log"></div>
+            </div>
+          </article>
+
+          <article class="side-box">
+            <h3>화면 이동</h3>
+            <div class="side-body stack">
+              <button id="btnOpenDetail" class="btn-primary">상세화면 열기</button>
+            </div>
+          </article>
+        </aside>
+
+        <section>
+          <article class="card">
+            <h3>대한민국 CCTV 지도</h3>
+            <div class="body">
+              <div class="map-stage">
+                <div id="siteMainMap" class="site-main-map"></div>
+                <div id="scenarioOverlay" class="map-overlay hidden">
+                  <div class="overlay-card">
+                    <div class="overlay-head">
+                      <span id="scenarioTitle">테스트 감지 화면</span>
+                      <button id="closeScenarioOverlay">닫기</button>
+                    </div>
+                    <div class="overlay-body">
+                      <div class="scenario-video" id="scenarioPreview">
+                        <video id="scenarioVideo" muted playsinline controls></video>
+                        <img id="scenarioStream" class="hidden" alt="실시간 감지 스트림" />
+                        <div id="scenarioBox" class="scenario-box hidden"></div>
+                      </div>
+                      <div id="scenarioResult" class="log"></div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </article>
+        </section>
+      </div>
+    </section>
+
+    <section id="webView">
+      <div class="web-grid">
+        <article class="card">
+          <h3>관리자 대시보드</h3>
+          <div class="body">
+            <div class="metrics">
+              <div class="metric"><div class="k">CCTV 수</div><div id="metricCctv" class="v">-</div></div>
+              <div class="metric"><div class="k">이벤트 호출</div><div id="metricEventCall" class="v">-</div></div>
+              <div class="metric"><div class="k">알림 상태</div><div id="metricNoti" class="v">-</div></div>
+            </div>
+            <div class="split">
+              <div>
+                <div class="muted">CCTV 리스트</div>
+                <div id="cctvList" class="list"></div>
+              </div>
+              <div>
+                <div class="muted">최근 이벤트</div>
+                <div id="recentEvents" class="list"></div>
+              </div>
+            </div>
+          </div>
+        </article>
+
+        <article class="card">
+          <h3>CCTV 모니터링</h3>
+          <div class="body">
+            <div class="control">
+              <input id="cctvRegion" placeholder="지역 필터 (예: 강남)" />
+              <input id="cctvKeyword" placeholder="키워드 검색 (이름/위치/ID)" />
+              <button id="btnCctvSearch">조회</button>
+              <button id="btnCctvReset">초기화</button>
+            </div>
+            <div class="control">
+              <select id="cctvSelect"></select>
+              <button id="btnLoadStream" class="btn-primary">LIVE 연결</button>
+              <button id="btnRefresh" class="btn-accent">새로고침</button>
+            </div>
+            <div id="videoPanel" class="video-panel">LIVE 영상</div>
+            <div id="liveLog" class="log"></div>
+          </div>
+        </article>
+      </div>
+
+      <div class="row2">
+        <article class="card">
+          <h3>이벤트 리스트</h3>
+          <div class="body">
+            <div class="control">
+              <select id="eventTypeFilter">
+                <option value="">전체</option>
+                <option value="fire">화재</option>
+                <option value="traffic_jam">교통체증</option>
+                <option value="wrong_way">역주행</option>
+              </select>
+              <select id="eventSortFilter">
+                <option value="desc">시간: 최신순</option>
+                <option value="asc">시간: 오래된순</option>
+              </select>
+              <button id="btnLoadEvents">조회</button>
+            </div>
+            <div id="eventList" class="list"></div>
+          </div>
+        </article>
+
+        <article class="card">
+          <h3>테스트 영상 업로드</h3>
+          <div class="body">
+            <div class="control">
+              <input id="fakeFile" type="text" placeholder="파일명(테스트용)" />
+              <button id="btnUpload">업로드</button>
+              <button id="btnAnalyze" class="btn-primary">AI 분석</button>
+            </div>
+            <div class="control">
+              <button id="btnDetectFire" class="btn-danger">화재 감지 API</button>
+              <button id="btnDetectJam">체증 감지 API</button>
+              <button id="btnDetectWrong">역주행 감지 API</button>
+              <button id="btnDetectFloating">부유물 감지 API</button>
+              <button id="btnDetectAbandoned">부화물 감지 API</button>
+              <button id="btnDetectEmergency">긴급차량 감지 API</button>
+            </div>
+            <div id="testResult" class="log"></div>
+          </div>
+        </article>
+      </div>
+    </section>
+
+  </main>
+
+  <div id="eventBanner" class="event-banner hidden"></div>
+
+  <script>
+    const state = {
+      cctvs: [],
+      events: [],
+      kakaoLoaded: false,
+      mapProvider: "none",
+      map: null,
+      markers: [],
+      leafletMap: null,
+      leafletMarkers: [],
+      siteMap: null,
+      siteMapMarkers: [],
+      siteMode: "main",
+      hlsReady: false,
+      activeHls: null,
+      activeStreamRequestId: 0,
+      cctvKeyword: "",
+      cctvRegion: "",
+      scenarioCloseTimer: null,
+    };
+
+    const scenarioMap = {
+      fire: {
+        label: "화재",
+        endpoint: "/fire/detect",
+        video: "https://storage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4",
+      },
+      wrong_way: {
+        label: "역주행",
+        endpoint: "/wrong-way/detect",
+        video: "https://storage.googleapis.com/gtv-videos-bucket/sample/ForBiggerJoyrides.mp4",
+      },
+      traffic_jam: {
+        label: "교통체증",
+        endpoint: "/traffic-jam/detect",
+        video: "https://storage.googleapis.com/gtv-videos-bucket/sample/ForBiggerJoyrides.mp4",
+      },
+      floating_object: {
+        label: "부유물",
+        endpoint: "/abandoned-object/detect-floating",
+        video: "/abandoned-object/floating-video",
+      },
+      abandoned_object: {
+        label: "부화물",
+        endpoint: "/abandoned-object/detect",
+        video: "https://storage.googleapis.com/gtv-videos-bucket/sample/ForBiggerFun.mp4",
+      },
+      emergency_vehicle: {
+        label: "긴급차량",
+        endpoint: "/emergency-vehicle/detect",
+        video: "https://storage.googleapis.com/gtv-videos-bucket/sample/ForBiggerEscapes.mp4",
+      },
+    };
+
+    const fallbackScenarioBoxes = {
+      fire: [{ x: 0.38, y: 0.28, w: 0.22, h: 0.32 }],
+      wrong_way: [{ x: 0.42, y: 0.54, w: 0.18, h: 0.24 }],
+      traffic_jam: [{ x: 0.18, y: 0.48, w: 0.56, h: 0.34 }],
+      floating_object: [{ x: 0.35, y: 0.38, w: 0.28, h: 0.22 }],
+      abandoned_object: [{ x: 0.44, y: 0.56, w: 0.18, h: 0.22 }],
+      emergency_vehicle: [{ x: 0.28, y: 0.44, w: 0.24, h: 0.24 }],
+    };
+
+    async function apiGet(url) {
+      const res = await fetch(url);
+      if (!res.ok) throw new Error(`${res.status} ${res.statusText}`);
+      return res.json();
+    }
+    async function apiPost(url, body) {
+      const res = await fetch(url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: body ? JSON.stringify(body) : "{}"
+      });
+      if (!res.ok) throw new Error(`${res.status} ${res.statusText}`);
+      return res.json();
+    }
+
+    function log(el, msg) {
+      const line = `[${new Date().toLocaleTimeString()}] ${msg}`;
+      el.textContent = line + "\n" + el.textContent;
+    }
+
+    function showEventBanner(text) {
+      const banner = document.getElementById("eventBanner");
+      if (!banner) return;
+      banner.textContent = text;
+      banner.classList.remove("hidden");
+      clearTimeout(showEventBanner._timer);
+    }
+
+    function hideEventBanner() {
+      const banner = document.getElementById("eventBanner");
+      if (!banner) return;
+      clearTimeout(showEventBanner._timer);
+      banner.classList.add("hidden");
+    }
+
+    function setActiveScenarioButton(type) {
+      const mapping = {
+        fire: "scenarioFire",
+        wrong_way: "scenarioWrongWay",
+        traffic_jam: "scenarioTrafficJam",
+        floating_object: "scenarioFloating",
+        abandoned_object: "scenarioAbandoned",
+        emergency_vehicle: "scenarioEmergency",
+      };
+
+      const ids = Object.values(mapping);
+      for (const id of ids) {
+        const btn = document.getElementById(id);
+        if (btn) btn.classList.remove("active");
+      }
+
+      const activeId = mapping[type];
+      if (activeId) {
+        const activeBtn = document.getElementById(activeId);
+        if (activeBtn) activeBtn.classList.add("active");
+      }
+    }
+
+    function openScenarioOverlay(title) {
+      const overlay = document.getElementById("scenarioOverlay");
+      const titleEl = document.getElementById("scenarioTitle");
+      if (titleEl) titleEl.textContent = title;
+      if (overlay) overlay.classList.remove("hidden");
+    }
+
+    function closeScenarioOverlay() {
+      const overlay = document.getElementById("scenarioOverlay");
+      const video = document.getElementById("scenarioVideo");
+      const streamImg = document.getElementById("scenarioStream");
+      if (video) {
+        video.pause();
+        video.removeAttribute("src");
+        video.load();
+        video.classList.remove("hidden");
+      }
+      if (streamImg) {
+        streamImg.classList.add("hidden");
+        streamImg.removeAttribute("src");
+      }
+      if (state.scenarioCloseTimer) {
+        clearTimeout(state.scenarioCloseTimer);
+        state.scenarioCloseTimer = null;
+      }
+      renderScenarioBox([]);
+      hideEventBanner();
+      if (overlay) overlay.classList.add("hidden");
+    }
+
+    async function playScenarioVideo(videoEl, src, fallbackSrc = "/abandoned-object/floating-video") {
+      if (!videoEl || !src) return;
+      const streamImg = document.getElementById("scenarioStream");
+
+      const cacheBustedSrc = src.includes("?") ? `${src}&v=${Date.now()}` : `${src}?v=${Date.now()}`;
+      const cacheBustedFallback = fallbackSrc.includes("?") ? `${fallbackSrc}&v=${Date.now()}` : `${fallbackSrc}?v=${Date.now()}`;
+
+      if (streamImg) {
+        streamImg.classList.add("hidden");
+        streamImg.removeAttribute("src");
+      }
+      videoEl.classList.remove("hidden");
+      videoEl.loop = false;
+      videoEl.pause();
+      videoEl.src = cacheBustedSrc;
+      videoEl.currentTime = 0;
+      videoEl.load();
+
+      videoEl.onerror = async () => {
+        if (videoEl.dataset.fallbackTried === "1") return;
+        videoEl.dataset.fallbackTried = "1";
+        videoEl.pause();
+        videoEl.src = cacheBustedFallback;
+        videoEl.currentTime = 0;
+        videoEl.load();
+        try {
+          await videoEl.play();
+        } catch (_) {
+          // Manual controls can still be used.
+        }
+      };
+
+      videoEl.dataset.fallbackTried = "0";
+      try {
+        await videoEl.play();
+      } catch (_) {
+        // Browser autoplay might block before user interaction; controls remain available.
+      }
+    }
+
+    function playFloatingRealtimeStream(streamUrl, durationSec = 0) {
+      const videoEl = document.getElementById("scenarioVideo");
+      const streamImg = document.getElementById("scenarioStream");
+      if (!videoEl || !streamImg || !streamUrl) return;
+
+      if (state.scenarioCloseTimer) {
+        clearTimeout(state.scenarioCloseTimer);
+        state.scenarioCloseTimer = null;
+      }
+
+      videoEl.pause();
+      videoEl.classList.add("hidden");
+      videoEl.removeAttribute("src");
+      videoEl.load();
+
+      streamImg.classList.remove("hidden");
+      streamImg.src = streamUrl.includes("?") ? `${streamUrl}&v=${Date.now()}` : `${streamUrl}?v=${Date.now()}`;
+
+      if (durationSec > 0) {
+        state.scenarioCloseTimer = setTimeout(() => {
+          closeScenarioOverlay();
+        }, Math.floor(durationSec * 1000) + 400);
+      }
+    }
+
+    async function ensureHlsLibrary() {
+      if (window.Hls) {
+        state.hlsReady = true;
+        return;
+      }
+      await new Promise((resolve, reject) => {
+        const script = document.createElement("script");
+        script.src = "https://cdn.jsdelivr.net/npm/hls.js@1.5.15/dist/hls.min.js";
+        script.onload = resolve;
+        script.onerror = reject;
+        document.head.appendChild(script);
+      });
+      state.hlsReady = !!window.Hls;
+    }
+
+    async function ensureLeafletLibrary() {
+      if (window.L) return;
+
+      if (!document.getElementById("leaflet-css")) {
+        const css = document.createElement("link");
+        css.id = "leaflet-css";
+        css.rel = "stylesheet";
+        css.href = "https://unpkg.com/leaflet@1.9.4/dist/leaflet.css";
+        document.head.appendChild(css);
+      }
+
+      await new Promise((resolve, reject) => {
+        const script = document.createElement("script");
+        script.src = "https://unpkg.com/leaflet@1.9.4/dist/leaflet.js";
+        script.onload = resolve;
+        script.onerror = reject;
+        document.head.appendChild(script);
+      });
+    }
+
+    function destroyActiveHls() {
+      if (state.activeHls) {
+        try {
+          state.activeHls.destroy();
+        } catch (_) {
+          // Ignore cleanup errors.
+        }
+        state.activeHls = null;
+      }
+    }
+
+    async function getFreshStreamUrl(cctvId) {
+      const data = await apiGet(`/cctvs/${cctvId}/stream`);
+      return data.stream_url || "";
+    }
+
+    async function playLiveStream(streamUrl, cctvId, requestId, panelId = "videoPanel", logId = "liveLog") {
+      const panel = document.getElementById(panelId);
+      const logEl = document.getElementById(logId);
+
+      destroyActiveHls();
+      panel.style.aspectRatio = "16 / 9";
+      panel.innerHTML = "";
+      const video = document.createElement("video");
+      video.controls = true;
+      video.autoplay = true;
+      video.muted = true;
+      video.playsInline = true;
+      video.style.width = "100%";
+      video.style.height = "100%";
+      video.style.objectFit = "contain";
+      video.addEventListener("loadedmetadata", () => {
+        if (video.videoWidth > 0 && video.videoHeight > 0) {
+          panel.style.aspectRatio = `${video.videoWidth} / ${video.videoHeight}`;
+        }
+      });
+      panel.appendChild(video);
+
+      try {
+        await ensureHlsLibrary();
+      } catch {
+        log(logEl, "HLS 라이브러리 로드 실패");
+      }
+
+      if (window.Hls && window.Hls.isSupported()) {
+        const hls = new window.Hls({
+          maxBufferLength: 20,
+          liveSyncDurationCount: 3,
+        });
+        state.activeHls = hls;
+        hls.loadSource(streamUrl);
+        hls.attachMedia(video);
+        hls.on(window.Hls.Events.MANIFEST_PARSED, () => {
+          if (requestId !== state.activeStreamRequestId) return;
+          video.play().catch(() => {});
+        });
+        hls.on(window.Hls.Events.ERROR, async (_, data) => {
+          if (requestId !== state.activeStreamRequestId) return;
+          if (data && data.fatal) {
+            log(logEl, `LIVE 재생 오류(${cctvId}): ${data.type}`);
+
+            if (data.type === "networkError") {
+              try {
+                log(logEl, `LIVE 재연결 시도(${cctvId})...`);
+                const refreshed = await getFreshStreamUrl(cctvId);
+                if (!refreshed) throw new Error("재발급 URL 없음");
+                if (requestId !== state.activeStreamRequestId) return;
+                hls.loadSource(refreshed);
+                hls.startLoad();
+                log(logEl, `LIVE 재연결 성공(${cctvId})`);
+                return;
+              } catch (e) {
+                log(logEl, `LIVE 재연결 실패(${cctvId}): ${e.message || e}`);
+              }
+            }
+
+            panel.innerHTML = "LIVE 연결 실패";
+          }
+        });
+        log(logEl, `LIVE 연결 성공(HLS): CCTV ${cctvId}`);
+        return;
+      }
+
+      if (video.canPlayType("application/vnd.apple.mpegurl")) {
+        video.src = streamUrl;
+        video.play().catch(() => {});
+        log(logEl, `LIVE 연결 성공(Native HLS): CCTV ${cctvId}`);
+        return;
+      }
+
+      panel.innerHTML = `
+        <div style="padding:12px;text-align:center;line-height:1.6;">
+          <div style="font-weight:700;margin-bottom:6px;">브라우저에서 HLS 재생을 지원하지 않습니다.</div>
+          <a href="${streamUrl}" target="_blank" rel="noreferrer">새 창에서 영상 열기</a>
+        </div>
+      `;
+      log(logEl, `브라우저 HLS 미지원: CCTV ${cctvId}`);
+    }
+
+    function renderCctvList() {
+      const list = document.getElementById("cctvList");
+      const select = document.getElementById("cctvSelect");
+      list.innerHTML = "";
+      select.innerHTML = "";
+
+      if (!state.cctvs.length) {
+        list.innerHTML = '<div class="item">데이터 없음</div>';
+        select.innerHTML = '<option>선택 가능 CCTV 없음</option>';
+        return;
+      }
+
+      const keyword = (state.cctvKeyword || "").trim().toLowerCase();
+      let filtered = keyword
+        ? state.cctvs.filter((c) => {
+            const idTxt = String(c.cctv_id || "");
+            const nameTxt = String(c.name || "").toLowerCase();
+            const locTxt = String(c.location || "").toLowerCase();
+            return idTxt.includes(keyword) || nameTxt.includes(keyword) || locTxt.includes(keyword);
+          })
+        : state.cctvs;
+
+      if (keyword && !filtered.length && state.cctvs.length) {
+        filtered = state.cctvs;
+      }
+
+      if (!filtered.length) {
+        list.innerHTML = '<div class="item">검색 결과 없음</div>';
+        select.innerHTML = '<option>검색 결과 없음</option>';
+        document.getElementById("metricCctv").textContent = `0/${state.cctvs.length}`;
+        return;
+      }
+
+      for (const c of filtered) {
+        const lat = Number.parseFloat(c.latitude ?? c.lat ?? c.raw?.coordy ?? c.raw?.y);
+        const lng = Number.parseFloat(c.longitude ?? c.lon ?? c.lng ?? c.raw?.coordx ?? c.raw?.x);
+        const latTxt = Number.isFinite(lat) ? lat.toFixed(4) : "-";
+        const lngTxt = Number.isFinite(lng) ? lng.toFixed(4) : "-";
+        const text = `${c.name || "CCTV"} (${latTxt}, ${lngTxt})`;
+        const div = document.createElement("div");
+        div.className = "item";
+        div.textContent = text;
+        div.onclick = () => {
+          select.value = String(c.cctv_id);
+          loadStream();
+        };
+        list.appendChild(div);
+
+        const opt = document.createElement("option");
+        opt.value = String(c.cctv_id);
+        opt.textContent = c.name || `CCTV ${c.cctv_id}`;
+        opt.dataset.streamUrl = c.stream_url || "";
+        select.appendChild(opt);
+      }
+
+      document.getElementById("metricCctv").textContent = `${filtered.length}/${state.cctvs.length}`;
+    }
+
+    function normalizeEventRows(raw) {
+      if (Array.isArray(raw?.items)) return raw.items;
+      if (Array.isArray(raw?.events)) return raw.events;
+      const fallback = [
+        { type: "fire", location: "강남대로", time: "10:32" },
+        { type: "traffic_jam", location: "올림픽대로", time: "10:30" },
+        { type: "wrong_way", location: "시흥대로", time: "10:28" }
+      ];
+      return fallback;
+    }
+
+    function renderEvents() {
+      const list = document.getElementById("eventList");
+      const recent = document.getElementById("recentEvents");
+      list.innerHTML = "";
+      recent.innerHTML = "";
+
+      const rows = state.events.length ? state.events : normalizeEventRows({});
+      for (const e of rows) {
+        const line = `${e.type || e.event_type || "event"}  ${e.location || e.road || "-"}  ${e.time || e.event_time || "-"}`;
+        const node = document.createElement("div");
+        node.className = "item";
+        node.textContent = line;
+        list.appendChild(node);
+
+        const node2 = document.createElement("div");
+        node2.className = "item";
+        node2.textContent = line;
+        recent.appendChild(node2);
+      }
+    }
+
+    async function loadCctvs() {
+      try {
+        const q = new URLSearchParams();
+        if (state.cctvRegion) q.set("region", state.cctvRegion);
+        const data = await apiGet(`/cctvs/?${q.toString()}`);
+        state.cctvs = Array.isArray(data.items) ? data.items : [];
+        renderCctvList();
+        updateSiteMapMarkers();
+      } catch (err) {
+        state.cctvs = [];
+        renderCctvList();
+        log(document.getElementById("liveLog"), `CCTV 조회 실패: ${err.message}`);
+      }
+    }
+
+    async function loadEvents() {
+      const eventType = document.getElementById("eventTypeFilter").value;
+      const sort = document.getElementById("eventSortFilter").value;
+      try {
+        const q = new URLSearchParams();
+        if (eventType) q.set("event_type", eventType);
+        q.set("sort", sort);
+        const data = await apiGet(`/events/?${q.toString()}`);
+        state.events = normalizeEventRows(data);
+        renderEvents();
+        document.getElementById("metricEventCall").textContent = "OK";
+      } catch (err) {
+        state.events = normalizeEventRows({});
+        renderEvents();
+        document.getElementById("metricEventCall").textContent = "ERR";
+      }
+    }
+
+    async function loadNotifications() {
+      try {
+        await apiGet("/notifications/");
+        document.getElementById("metricNoti").textContent = "OK";
+      } catch {
+        document.getElementById("metricNoti").textContent = "ERR";
+      }
+    }
+
+    async function loadStream() {
+      const requestId = ++state.activeStreamRequestId;
+      const id = document.getElementById("cctvSelect").value;
+      if (!id) return;
+      const select = document.getElementById("cctvSelect");
+      const selected = select.options[select.selectedIndex];
+      const selectedUrl = selected ? selected.dataset.streamUrl : "";
+      const logEl = document.getElementById("liveLog");
+
+      try {
+        const streamUrl = selectedUrl || (await apiGet(`/cctvs/${id}/stream`)).stream_url;
+        if (!streamUrl) throw new Error("스트림 URL 없음");
+        if (requestId !== state.activeStreamRequestId) return;
+        await playLiveStream(streamUrl, id, requestId, "videoPanel", "liveLog");
+      } catch (err) {
+        if (requestId !== state.activeStreamRequestId) return;
+        document.getElementById("videoPanel").textContent = "LIVE 연결 실패";
+        log(logEl, `LIVE 연결 실패: ${err.message}`);
+      }
+    }
+
+    function renderScenarioBox(boxes) {
+      const boxEl = document.getElementById("scenarioBox");
+      if (!boxEl) return;
+      if (!Array.isArray(boxes) || !boxes.length) {
+        boxEl.classList.add("hidden");
+        return;
+      }
+
+      const b = boxes[0];
+      const x = Math.max(0, Math.min(1, Number(b.x ?? 0)));
+      const y = Math.max(0, Math.min(1, Number(b.y ?? 0)));
+      const w = Math.max(0.05, Math.min(1, Number(b.w ?? 0.2)));
+      const h = Math.max(0.05, Math.min(1, Number(b.h ?? 0.2)));
+
+      boxEl.style.left = `${x * 100}%`;
+      boxEl.style.top = `${y * 100}%`;
+      boxEl.style.width = `${w * 100}%`;
+      boxEl.style.height = `${h * 100}%`;
+      boxEl.classList.remove("hidden");
+    }
+
+    async function callAndLog(url, label, bannerName = "") {
+      const resultEl = document.getElementById("testResult");
+      try {
+        const data = await apiPost(url);
+        log(resultEl, `${label} 성공: ${JSON.stringify(data)}`);
+        if (bannerName) {
+          showEventBanner(`${bannerName} 감지`);
+        }
+      } catch (err) {
+        log(resultEl, `${label} 실패: ${err.message}`);
+      }
+    }
+
+    function showView() {
+      const detailMode = new URLSearchParams(location.search).get("detail") === "1";
+      state.siteMode = detailMode ? "detail" : "main";
+
+      document.getElementById("siteMainView").classList.toggle("hidden", detailMode);
+      document.getElementById("webView").classList.toggle("hidden", !detailMode);
+      document.getElementById("linkWeb").classList.add("active");
+      document.body.classList.remove("app-mode");
+    }
+
+    async function initSiteMainMap() {
+      const mapEl = document.getElementById("siteMainMap");
+      if (!mapEl || state.siteMap) {
+        updateSiteMapMarkers();
+        return;
+      }
+
+      await ensureLeafletLibrary();
+      state.siteMap = window.L.map("siteMainMap").setView([36.35, 127.85], 7);
+      window.L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+        attribution: '&copy; OpenStreetMap contributors',
+      }).addTo(state.siteMap);
+      updateSiteMapMarkers();
+    }
+
+    async function openSiteCctv(cctv) {
+      const meta = document.getElementById("selectedCctvMeta");
+      meta.innerHTML = `
+        <div><strong>${cctv.name || `CCTV ${cctv.cctv_id}`}</strong></div>
+        <div>위치: ${cctv.location || "정보 없음"}</div>
+        <div>좌표: ${cctv.latitude || "-"}, ${cctv.longitude || "-"}</div>
+      `;
+
+      const requestId = ++state.activeStreamRequestId;
+      const streamUrl = cctv.stream_url || (await getFreshStreamUrl(cctv.cctv_id));
+      if (!streamUrl) {
+        document.getElementById("siteLivePanel").textContent = "CCTV LIVE 연결 실패";
+        return;
+      }
+      await playLiveStream(streamUrl, cctv.cctv_id, requestId, "siteLivePanel", "siteLiveLog");
+    }
+
+    function updateSiteMapMarkers() {
+      if (!state.siteMap || !window.L) return;
+      for (const marker of state.siteMapMarkers) {
+        state.siteMap.removeLayer(marker);
+      }
+      state.siteMapMarkers = [];
+
+      const bounds = [];
+      for (const c of state.cctvs) {
+        const lat = Number.parseFloat(c.latitude ?? c.lat ?? c.raw?.coordy ?? c.raw?.y);
+        const lng = Number.parseFloat(c.longitude ?? c.lon ?? c.lng ?? c.raw?.coordx ?? c.raw?.x);
+        if (!Number.isFinite(lat) || !Number.isFinite(lng)) continue;
+        const marker = window.L.circleMarker([lat, lng], {
+          radius: 5,
+          color: "#0f766e",
+          weight: 2,
+          fillColor: "#14b8a6",
+          fillOpacity: 0.85,
+        }).addTo(state.siteMap);
+        marker.bindTooltip(c.name || `CCTV ${c.cctv_id}`);
+        marker.on("click", () => openSiteCctv(c));
+        state.siteMapMarkers.push(marker);
+        bounds.push([lat, lng]);
+      }
+
+      if (bounds.length) {
+        state.siteMap.fitBounds(bounds, { padding: [24, 24] });
+        if (state.siteMap.getZoom() > 13) {
+          state.siteMap.setZoom(13);
+        }
+      }
+    }
+
+    async function runScenario(type) {
+      const config = scenarioMap[type];
+      if (!config) return;
+
+      setActiveScenarioButton(type);
+      const preview = document.getElementById("scenarioVideo");
+      const result = document.getElementById("scenarioResult");
+      renderScenarioBox([]);
+      openScenarioOverlay(`${config.label} 감지 테스트`);
+      showEventBanner(`${config.label} 감지`);
+
+      try {
+        const response = await apiPost(config.endpoint);
+        result.textContent = JSON.stringify(response, null, 2);
+        if (type === "floating_object") {
+          const streamUrl = response?.details?.stream_url || "/abandoned-object/floating-stream";
+          const durationSec = Number(response?.details?.duration_sec || 0);
+          renderScenarioBox([]);
+          playFloatingRealtimeStream(streamUrl, durationSec);
+        } else {
+          await playScenarioVideo(preview, config.video, "/abandoned-object/floating-video");
+          const boxesFromApi = response?.details?.boxes || [];
+          const boxes = boxesFromApi.length ? boxesFromApi : (fallbackScenarioBoxes[type] || []);
+          renderScenarioBox(boxes);
+        }
+        await loadEvents();
+      } catch (err) {
+        result.textContent = `${config.label} 테스트 실패: ${err.message}`;
+        hideEventBanner();
+      }
+    }
+
+    function bindActions() {
+      const scenarioVideo = document.getElementById("scenarioVideo");
+      if (scenarioVideo) {
+        scenarioVideo.onended = () => closeScenarioOverlay();
+      }
+      document.addEventListener("keydown", (e) => {
+        const overlay = document.getElementById("scenarioOverlay");
+        if (!overlay || overlay.classList.contains("hidden")) return;
+        if (e.key === "q" || e.key === "Q") {
+          closeScenarioOverlay();
+        }
+      });
+
+      document.getElementById("btnLoadStream").onclick = loadStream;
+      document.getElementById("btnRefresh").onclick = async () => {
+        await loadCctvs();
+        await loadEvents();
+      };
+      document.getElementById("btnCctvSearch").onclick = async () => {
+        state.cctvRegion = document.getElementById("cctvRegion").value.trim();
+        state.cctvKeyword = document.getElementById("cctvKeyword").value.trim();
+        await loadCctvs();
+      };
+      document.getElementById("btnCctvReset").onclick = async () => {
+        state.cctvRegion = "";
+        state.cctvKeyword = "";
+        document.getElementById("cctvRegion").value = "";
+        document.getElementById("cctvKeyword").value = "";
+        await loadCctvs();
+      };
+      document.getElementById("cctvKeyword").addEventListener("keydown", async (e) => {
+        if (e.key === "Enter") {
+          state.cctvKeyword = e.currentTarget.value.trim();
+          await loadCctvs();
+        }
+      });
+      document.getElementById("scenarioFire").onclick = () => runScenario("fire");
+      document.getElementById("scenarioWrongWay").onclick = () => runScenario("wrong_way");
+      document.getElementById("scenarioTrafficJam").onclick = () => runScenario("traffic_jam");
+      document.getElementById("scenarioFloating").onclick = () => runScenario("floating_object");
+      document.getElementById("scenarioAbandoned").onclick = () => runScenario("abandoned_object");
+      document.getElementById("scenarioEmergency").onclick = () => runScenario("emergency_vehicle");
+      document.getElementById("closeScenarioOverlay").onclick = () => closeScenarioOverlay();
+      document.getElementById("btnOpenDetail").onclick = () => {
+        const url = new URL(window.location.href);
+        url.searchParams.set("detail", "1");
+        window.location.href = url.pathname + url.search;
+      };
+      document.getElementById("btnLoadEvents").onclick = loadEvents;
+
+      document.getElementById("btnUpload").onclick = () => callAndLog("/tests/video/upload", "영상 업로드");
+      document.getElementById("btnAnalyze").onclick = async () => {
+        await callAndLog("/tests/video/analyze", "AI 분석");
+        try {
+          const res = await apiGet("/tests/result");
+          log(document.getElementById("testResult"), `결과 조회: ${JSON.stringify(res)}`);
+        } catch (err) {
+          log(document.getElementById("testResult"), `결과 조회 실패: ${err.message}`);
+        }
+      };
+
+      document.getElementById("btnDetectFire").onclick = () => callAndLog("/fire/detect", "화재 감지", "화재");
+      document.getElementById("btnDetectJam").onclick = () => callAndLog("/traffic-jam/detect", "교통체증 감지", "교통체증");
+      document.getElementById("btnDetectWrong").onclick = () => callAndLog("/wrong-way/detect", "역주행 감지", "역주행");
+      document.getElementById("btnDetectFloating").onclick = () => callAndLog("/abandoned-object/detect-floating", "부유물 감지", "부유물");
+      document.getElementById("btnDetectAbandoned").onclick = () => callAndLog("/abandoned-object/detect", "부화물 감지", "부화물");
+      document.getElementById("btnDetectEmergency").onclick = () => callAndLog("/emergency-vehicle/detect", "긴급차량 감지", "긴급차량");
+    }
+
+    async function init() {
+      showView();
+      bindActions();
+      await Promise.all([loadCctvs(), loadEvents(), loadNotifications()]);
+      if (!document.getElementById("siteMainView").classList.contains("hidden")) {
+        await initSiteMainMap();
+      }
+
+      const wsUrl = `${location.protocol === "https:" ? "wss" : "ws"}://${location.host}/events/ws`;
+      try {
+        const ws = new WebSocket(wsUrl);
+        ws.onmessage = (ev) => log(document.getElementById("liveLog"), `WS 이벤트: ${ev.data}`);
+      } catch (_) {
+        // Ignore websocket init failure in local preview.
+      }
+    }
+
+    init();
+  </script>
+</body>
+</html>

@@ -55,3 +55,11 @@ logs/
 # Temporary files
 *.tmp
 temp/
+# YOLO models
+*.pt
+
+# Video files
+*.mp4
+
+# Generated files
+generated/
