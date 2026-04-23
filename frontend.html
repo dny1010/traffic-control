@@ -1186,7 +1186,7 @@
         const response = await apiPost(config.endpoint);
         result.textContent = JSON.stringify(response, null, 2);
         if (type === "floating_object") {
-          const streamUrl = response?.details?.stream_url || "/abandoned-object/floating-stream";
+          const streamUrl = response?.details?.stream_url || "/floating-object/stream";
           const durationSec = Number(response?.details?.duration_sec || 0);
           renderScenarioBox([]);
           playFloatingRealtimeStream(streamUrl, durationSec);

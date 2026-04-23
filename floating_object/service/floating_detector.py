@@ -42,7 +42,6 @@ class FloatingDetector:
         return self._model_cache
 
     def resolve_video(self) -> Path:
-        # Accept both names to avoid user typo mismatch.
         candidates = [
             self.project_root / "floating_matters.mp4",
             self.project_root / "floating_matter.mp4",
@@ -85,66 +84,6 @@ class FloatingDetector:
             frame_best_conf = max(frame_best_conf, float(conf))
 
         return detected_boxes, frame_best_conf
-
-    def _render_annotated_video(self, source_video_path: Path, output_video_path: Path) -> None:
-        capture = cv2.VideoCapture(str(source_video_path))
-        if not capture.isOpened():
-            raise RuntimeError(f"비디오를 열 수 없습니다: {source_video_path.name}")
-
-        fps = capture.get(cv2.CAP_PROP_FPS)
-        if fps <= 0:
-            fps = 24.0
-        width = int(capture.get(cv2.CAP_PROP_FRAME_WIDTH) or 1280)
-        height = int(capture.get(cv2.CAP_PROP_FRAME_HEIGHT) or 720)
-
-        output_video_path.parent.mkdir(parents=True, exist_ok=True)
-        writer = cv2.VideoWriter(
-            str(output_video_path),
-            cv2.VideoWriter_fourcc(*"mp4v"),
-            fps,
-            (width, height),
-        )
-
-        model = self._get_model()
-        frame_index = 0
-        latest_boxes: list[tuple[int, int, int, int, float]] = []
-
-        try:
-            while True:
-                ok, frame = capture.read()
-                if not ok:
-                    break
-
-                frame_index += 1
-                if frame_index % 2 == 0:
-                    results = model.predict(source=frame, verbose=False)
-                    latest_boxes = []
-                    if results:
-                        result = results[0]
-                        if result.boxes is not None and len(result.boxes) > 0:
-                            xyxy = result.boxes.xyxy.tolist()
-                            confs = result.boxes.conf.tolist() if result.boxes.conf is not None else [0.0] * len(xyxy)
-                            for raw_box, conf in zip(xyxy, confs):
-                                x1, y1, x2, y2 = raw_box
-                                latest_boxes.append((int(x1), int(y1), int(x2), int(y2), float(conf)))
-
-                for x1, y1, x2, y2, conf in latest_boxes:
-                    cv2.rectangle(frame, (x1, y1), (x2, y2), (30, 64, 255), 2)
-                    cv2.putText(
-                        frame,
-                        f"floating {conf:.2f}",
-                        (x1, max(20, y1 - 8)),
-                        cv2.FONT_HERSHEY_SIMPLEX,
-                        0.55,
-                        (255, 255, 255),
-                        2,
-                        cv2.LINE_AA,
-                    )
-
-                writer.write(frame)
-        finally:
-            capture.release()
-            writer.release()
 
     def get_video_duration(self, video_path: Path) -> float:
         capture = cv2.VideoCapture(str(video_path))
@@ -222,7 +161,7 @@ class FloatingDetector:
         finally:
             capture.release()
 
-    def detect(self, video_path: Path, annotated_output_path: Path | None = None) -> FloatingDetectionResult:
+    def detect(self, video_path: Path) -> FloatingDetectionResult:
         if not video_path.exists():
             raise FileNotFoundError(f"샘플 영상이 없습니다: {video_path.name}")
 
@@ -259,21 +198,17 @@ class FloatingDetector:
                 results = model.predict(source=frame, verbose=False)
                 if not results:
                     continue
+
                 result = results[0]
+                detected_boxes, frame_conf = self._extract_normalized_boxes(result, frame_w, frame_h)
+                if not detected_boxes:
+                    continue
 
-                detected_boxes, frame_best_conf = self._extract_normalized_boxes(result, frame_w, frame_h)
-
-                if frame_best_conf > best_confidence and detected_boxes:
-                    best_confidence = frame_best_conf
-                    detected_boxes.sort(key=lambda b: b["confidence"], reverse=True)
-                    best_boxes = detected_boxes[:3]
+                if frame_conf > best_confidence:
+                    best_confidence = frame_conf
+                    best_boxes = detected_boxes
         finally:
             capture.release()
-
-        rendered_output: str | None = None
-        if annotated_output_path is not None:
-            self._render_annotated_video(video_path, annotated_output_path)
-            rendered_output = str(annotated_output_path)
 
         return FloatingDetectionResult(
             model_name=model_path.name,
@@ -281,5 +216,4 @@ class FloatingDetector:
             boxes=best_boxes,
             confidence=best_confidence,
             frames_analyzed=frames_analyzed,
-            annotated_video_path=rendered_output,
         )

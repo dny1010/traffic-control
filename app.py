@@ -14,6 +14,7 @@ from database.config import Base, engine, get_db
 from models import CCTV, Detection, Device, Event
 from fire.view.router import router as fire_router
 from abandoned_object.view.router import router as abandoned_object_router
+from floating_object.view.router import router as floating_object_router
 from traffic_jam.view.router import router as traffic_jam_router
 from wrong_way.view.router import router as wrong_way_router
 from emergency_vehicle.view.router import router as emergency_vehicle_router
@@ -89,6 +90,7 @@ def init_db_tables():
 # Keep legacy routes for existing frontend compatibility.
 app.include_router(fire_router, prefix="/fire", tags=["Fire Detection"])
 app.include_router(abandoned_object_router, prefix="/abandoned-object", tags=["Abandoned Object Detection"])
+app.include_router(floating_object_router, prefix="/floating-object", tags=["Floating Object Detection"])
 app.include_router(traffic_jam_router, prefix="/traffic-jam", tags=["Traffic Jam Detection"])
 app.include_router(wrong_way_router, prefix="/wrong-way", tags=["Wrong Way Detection"])
 app.include_router(emergency_vehicle_router, prefix="/emergency-vehicle", tags=["Emergency Vehicle Detection"])
