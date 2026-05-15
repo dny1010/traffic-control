@@ -6,804 +6,1499 @@
   <title>Traffic Control Frontend</title>
   <style>
     :root {
-      --bg: #edf2f7;
-      --ink: #132238;
-      --muted: #5c6b7d;
-      --card: #ffffff;
-      --line: #d7e1ea;
-      --brand: #0f766e;
-      --accent: #ca8a04;
+      --bg: #f5f7fb;
+      --surface: #ffffff;
+      --surface-soft: #f8fafc;
+      --line: #cfd8e3;
+      --line-strong: #9fb0c7;
+      --text: #0f172a;
+      --muted: #64748b;
+      --brand: #304e7a;
+      --brand-soft: #e9eff8;
+      --accent: #dbe7f5;
       --danger: #dc2626;
-      --ok: #2563eb;
+      --success: #16a34a;
+      --warning: #d97706;
+      --shadow: 0 12px 32px rgba(15, 23, 42, 0.08);
     }
-    * { box-sizing: border-box; }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html,
+    body {
+      height: 100%;
+    }
+
     body {
       margin: 0;
-      color: var(--ink);
-      font-family: "Pretendard", "SUIT", "Noto Sans KR", sans-serif;
-      background:
-        radial-gradient(1000px 400px at 10% -20%, #dbeafe 0%, transparent 65%),
-        radial-gradient(1000px 400px at 90% 120%, #dcfce7 0%, transparent 65%),
-        var(--bg);
+      background: var(--bg);
+      color: var(--text);
+      font-family: "Malgun Gothic", "Apple SD Gothic Neo", sans-serif;
+      overflow: hidden;
     }
+
     .topbar {
       position: sticky;
       top: 0;
-      z-index: 20;
+      z-index: 50;
       display: flex;
-      gap: 12px;
-      align-items: center;
       justify-content: space-between;
-      padding: 14px 20px;
+      align-items: center;
+      gap: 16px;
+      padding: 10px 16px;
       border-bottom: 1px solid var(--line);
-      background: rgba(255,255,255,0.86);
-      backdrop-filter: blur(8px);
+      background: rgba(255, 255, 255, 0.96);
+      backdrop-filter: blur(10px);
+      min-height: 56px;
     }
-    .title { font-size: 18px; font-weight: 800; letter-spacing: 0.2px; }
-    .nav { display: flex; gap: 8px; flex-wrap: wrap; }
-    .nav a {
-      text-decoration: none;
-      color: var(--ink);
-      border: 1px solid var(--line);
+
+    .title {
+      font-size: 20px;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+    }
+
+    .top-actions {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+    }
+
+    .top-actions a,
+    .top-actions button,
+    .sidebar button,
+    .action-button,
+    button,
+    select,
+    input {
+      font: inherit;
+    }
+
+    .top-actions a,
+    .top-actions button,
+    .action-button,
+    button {
+      border: 1px solid var(--line-strong);
       background: #fff;
-      padding: 8px 12px;
+      color: var(--text);
       border-radius: 10px;
-      font-size: 13px;
-      font-weight: 700;
-    }
-    .nav a.active {
-      background: var(--brand);
-      color: #fff;
-      border-color: var(--brand);
+      padding: 10px 14px;
+      text-decoration: none;
+      cursor: pointer;
+      transition: all 0.18s ease;
     }
 
-    .container { padding: 16px; }
+    .top-actions a:hover,
+    .top-actions button:hover,
+    .action-button:hover,
+    button:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 6px 16px rgba(15, 23, 42, 0.08);
+    }
 
-    .site-shell {
-      display: grid;
-      grid-template-columns: 320px minmax(0, 1fr);
-      gap: 14px;
-      align-items: start;
-    }
-    .sidebar {
-      position: sticky;
-      top: 82px;
-      display: grid;
-      gap: 12px;
-    }
-    .side-box {
-      border: 1px solid var(--line);
-      background: var(--card);
-      border-radius: 14px;
-      box-shadow: 0 8px 22px rgba(2, 8, 23, 0.04);
+    .container {
+      padding: 10px;
+      height: calc(100vh - 56px);
       overflow: hidden;
     }
-    .side-box h3 {
-      margin: 0;
-      padding: 12px 14px;
-      border-bottom: 1px solid var(--line);
+
+    .app-shell {
+      display: grid;
+      grid-template-columns: 210px minmax(0, 1fr);
+      gap: 10px;
+      height: 100%;
+      min-height: 0;
+    }
+
+    .sidebar {
+      display: flex;
+      flex-direction: column;
+      background: var(--surface);
+      border: 1px solid var(--line-strong);
+      box-shadow: var(--shadow);
+      padding: 8px;
+      height: 100%;
+      min-height: 0;
+      border-radius: 14px;
+    }
+
+    .sidebar-body {
+      display: grid;
+      gap: 8px;
+      padding: 0;
+      flex: 1;
+      align-content: start;
+    }
+
+    .sidebar-footer {
+      padding: 10px 0 0;
+    }
+
+    .sidebar button {
+      width: 100%;
+      min-height: 38px;
+      border-radius: 10px;
+      text-align: left;
+      background: transparent;
+      border: 0;
+      box-shadow: none;
+      padding: 10px 12px;
+    }
+
+    .sidebar .menu-button {
+      min-height: 38px;
+      font-weight: 700;
+      background: transparent;
       font-size: 15px;
     }
-    .side-body { padding: 12px 14px; }
-    .stack { display: grid; gap: 8px; }
-    .stack button { width: 100%; text-align: left; }
+
+    .sidebar .menu-button.active,
+    .sidebar .scenario-btn.active {
+      background: #c53030;
+      color: #fff;
+    }
+
+    .sidebar .group-title {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 12px;
+      color: var(--text);
+      font-size: 15px;
+      font-weight: 700;
+      cursor: pointer;
+      border-radius: 10px;
+    }
+
+    .sidebar .group-title.active {
+      background: #c53030;
+      color: #fff;
+    }
+
+    .page-stack {
+      min-width: 0;
+      min-height: 0;
+      height: 100%;
+    }
+
+    .page-view {
+      display: block;
+      height: 100%;
+    }
+
+    .hidden {
+      display: none !important;
+    }
+
+    .main-layout {
+      display: grid;
+      grid-template-columns: minmax(0, 1.78fr) minmax(360px, 0.88fr);
+      gap: 12px;
+      height: 100%;
+      min-height: 0;
+    }
+
+    .card {
+      border: 1px solid var(--line-strong);
+      background: var(--surface);
+      box-shadow: var(--shadow);
+      border-radius: 18px;
+    }
+
+    .section-card {
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
+      height: 100%;
+    }
+
+    .section-title {
+      padding: 9px 13px;
+      border-bottom: 1px solid var(--line);
+      background: var(--accent);
+      font-weight: 800;
+      font-size: 18px;
+      border-top-left-radius: 18px;
+      border-top-right-radius: 18px;
+    }
+
+    .section-body {
+      padding: 8px 10px;
+      min-height: 0;
+    }
+
+    .map-card {
+      overflow: hidden;
+    }
+
+    .map-shell {
+      position: relative;
+      height: 100%;
+      min-height: 0;
+      padding: 6px;
+      background:
+        linear-gradient(to right, rgba(159, 176, 199, 0.18) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(159, 176, 199, 0.18) 1px, transparent 1px),
+        #f7faff;
+      background-size: 25% 25%;
+      border-radius: 18px;
+    }
+
+    .map-label {
+      position: absolute;
+      top: 14px;
+      left: 14px;
+      z-index: 5;
+      padding: 10px 14px;
+      background: rgba(255, 255, 255, 0.96);
+      border: 1px solid var(--line-strong);
+      font-size: 14px;
+      font-weight: 700;
+      border-radius: 12px;
+    }
+
     .site-main-map {
       width: 100%;
-      height: min(76vh, 840px);
-      min-height: 620px;
-      border-radius: 14px;
-      border: 1px solid var(--line);
+      height: 100%;
+      min-height: 0;
+      border: 2px dashed #cfd8e3;
+      background: #eef5ff;
+      border-radius: 16px;
+    }
+
+    .main-side {
+      display: grid;
+      grid-template-rows: auto auto minmax(0, 1fr);
+      gap: 12px;
+      min-height: 0;
+      height: 100%;
+    }
+
+    .meta-block {
+      display: grid;
+      gap: 10px;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .meta-title {
+      color: var(--text);
+      font-weight: 800;
+      font-size: 14px;
+    }
+
+    .video-panel {
+      width: 100%;
+      min-height: 112px;
+      aspect-ratio: 16 / 9;
+      border: 2px dashed #cfd8e3;
+      background: #f8fbff;
+      display: grid;
+      place-items: center;
+      color: var(--muted);
       overflow: hidden;
+      border-radius: 16px;
+    }
+
+    .video-panel video,
+    .video-panel iframe,
+    .video-panel img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      display: block;
+      background: #111827;
+    }
+
+    .today-list,
+    .recent-list {
+      display: grid;
+      gap: 10px;
+    }
+
+    .today-list {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 8px;
+    }
+
+    .today-row,
+    .recent-row {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      align-items: center;
+      gap: 12px;
+      padding: 10px 8px;
+      border: 1px solid var(--line);
+      background: var(--surface-soft);
+      border-radius: 14px;
+    }
+
+    .event-type-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-weight: 700;
+    }
+
+    .event-type-icon {
+      width: 24px;
+      height: 24px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 999px;
+      background: #eef4fb;
+      font-size: 14px;
+      line-height: 1;
+      flex-shrink: 0;
+    }
+
+    .cctv-map-marker {
+      width: 28px;
+      height: 28px;
+      display: grid;
+      place-items: center;
+      border: 0;
+      border-radius: 0;
+      background: transparent;
+      box-shadow: none;
+      font-size: 22px;
+      line-height: 1;
+    }
+
+    .today-row {
+      min-height: 40px;
+      padding: 5px 7px;
+      gap: 8px;
+    }
+
+    .today-count {
+      display: inline-flex;
+      min-width: 46px;
+      justify-content: center;
+      padding: 6px 10px;
+      border-radius: 999px;
+      background: var(--brand-soft);
+      color: var(--brand);
+      font-weight: 800;
+    }
+
+    .recent-header,
+    .event-filter-row {
+      display: grid;
+      gap: 10px;
+      align-items: center;
+      font-size: 13px;
+      color: var(--muted);
+      font-weight: 700;
+    }
+
+    .recent-header,
+    .recent-row {
+      grid-template-columns: 200px 148px minmax(0, 1fr);
+    }
+
+    .recent-row > div:first-child,
+    .event-side-item > div:first-child {
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .recent-header > div,
+    .recent-row > div,
+    .event-side-item > div {
+      min-width: 0;
+    }
+
+    .recent-header > div:nth-child(2),
+    .recent-row > div:nth-child(2),
+    .event-side-item > div:nth-child(2) {
+      padding-left: 10px;
+    }
+
+    .recent-header > div:nth-child(3),
+    .recent-row > div:nth-child(3),
+    .event-side-item > div:nth-child(3) {
+      padding-left: 12px;
+    }
+
+    .recent-row > div:last-child,
+    .event-side-item > div:last-child {
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .scroll-box {
+      max-height: 230px;
+      overflow: auto;
+    }
+
+    .recent-card-fill {
+      min-height: 0;
+    }
+
+    .recent-card-fill .section-body {
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
+      height: 100%;
+      overflow: hidden;
+    }
+
+    .recent-card-fill .scroll-box {
+      flex: 1;
+      max-height: none;
+      min-height: 0;
+    }
+
+    .dashboard-layout {
+      display: grid;
+      grid-template-columns: 1.05fr 1.7fr;
+      gap: 12px;
+      align-items: start;
+      height: 100%;
+      min-height: 0;
+    }
+
+    .dashboard-left {
+      display: grid;
+      gap: 12px;
+      height: 100%;
+      min-height: 0;
+    }
+
+    .dashboard-card,
+    .event-page-card {
+      border-radius: 18px;
+      overflow: hidden;
+      min-height: 0;
+    }
+
+    .dashboard-right-card {
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .dashboard-right-card .dashboard-body {
+      flex: 1;
+      min-height: 0;
+      display: flex;
+      flex-direction: column;
+      padding: 0;
+    }
+
+    .dashboard-right-card .table-wrap {
+      flex: 1;
+      min-height: 0;
+    }
+
+    .dashboard-body {
+      padding: 12px;
+    }
+
+    .dashboard-filter-row,
+    .search-row,
+    .control-row,
+    .event-filter-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 10px;
+    }
+
+    .search-row {
+      flex-wrap: nowrap;
+      width: 100%;
+    }
+
+    .search-row input {
+      flex: 1 1 0;
+      min-width: 0;
+    }
+
+    .search-row .action-button {
+      min-width: 100px;
+      flex: 0 0 auto;
+    }
+
+    .control-row {
+      flex-wrap: nowrap;
+      width: 100%;
+    }
+
+    .control-row select {
+      flex: 1 1 0;
+      min-width: 0;
+    }
+
+    .control-row .action-button {
+      min-width: 100px;
+      flex: 0 0 auto;
+    }
+
+    select,
+    input {
+      min-height: 40px;
+      padding: 0 12px;
+      border: 1px solid var(--line-strong);
+      background: #fff;
+      min-width: 140px;
+    }
+
+    .table-wrap {
+      overflow: auto;
+      border-top: 1px solid var(--line);
+      border-bottom-left-radius: 18px;
+      border-bottom-right-radius: 18px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      table-layout: fixed;
+    }
+
+    th,
+    td {
+      padding: 10px 12px;
+      border-bottom: 1px solid var(--line);
+      text-align: left;
+      vertical-align: middle;
+      font-size: 14px;
+      word-break: break-word;
+    }
+
+    #dashboardEventTable td:first-child,
+    #dashboardEventTable td:nth-child(3) {
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    th {
+      background: #f7f9fc;
+      font-weight: 800;
+    }
+
+    /* 관리자 대시보드 표는 한눈에 보기 쉽도록 글자를 가운데 정렬합니다. */
+    #dashboardCctvTable td,
+    #dashboardEventTable td,
+    #dashboardCctvTable td + td,
+    #dashboardEventTable td + td,
+    #dashboardCctvTable tr:first-child td,
+    #dashboardEventTable tr:first-child td {
+      text-align: center;
+    }
+
+    #dashboardCctvTable,
+    #dashboardEventTable {
+      text-align: center;
+    }
+
+    table thead th {
+      text-align: center;
+    }
+
+    tbody tr {
+      cursor: pointer;
+      transition: background 0.15s ease;
+    }
+
+    tbody tr:hover {
+      background: #f8fbff;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 56px;
+      padding: 6px 10px;
+      border-radius: 8px;
+      font-size: 12px;
+      font-weight: 800;
+    }
+
+    .badge-connected,
+    .badge-complete,
+    .badge-success {
+      background: #dcfce7;
+      color: #15803d;
+    }
+
+    .badge-disconnected,
+    .badge-danger {
+      background: #fee2e2;
+      color: #b91c1c;
+    }
+
+    .badge-pending,
+    .badge-warning {
+      background: #fef3c7;
+      color: #b45309;
+    }
+
+    .badge-processing,
+    .badge-info {
       background: #dbeafe;
-      position: relative;
-      z-index: 1;
+      color: #1d4ed8;
     }
-    .map-stage {
-      position: relative;
-      isolation: isolate;
+
+    .detect-test-box {
+      min-height: 150px;
+      border: 2px dashed #cfd8e3;
+      background: linear-gradient(180deg, #f9fbff, #ffffff);
+      display: grid;
+      place-items: center;
+      padding: 24px;
+      text-align: center;
+      color: var(--muted);
+      border-radius: 16px;
+      cursor: pointer;
     }
-    .map-overlay {
+
+    .upload-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 8px;
+      margin-top: 12px;
+    }
+
+    .analysis-title {
+      margin-top: 16px;
+      font-size: 18px;
+      font-weight: 800;
+    }
+
+    .analysis-divider {
+      border-top: 1px solid var(--line);
+      margin: 8px 0 12px;
+    }
+
+    .analysis-result-list {
+      display: grid;
+      gap: 8px;
+    }
+
+    .analysis-result-item {
+      padding: 10px 12px;
+      border: 1px solid var(--line);
+      background: #f8fbff;
+      border-radius: 12px;
+      font-size: 14px;
+    }
+
+    .event-page-layout {
+      display: grid;
+      grid-template-columns: 1.1fr 1.2fr;
+      gap: 12px;
+      height: 100%;
+      min-height: 0;
+    }
+
+    .event-side-list {
+      max-height: 300px;
+      overflow: auto;
+      border: 1px solid var(--line);
+      background: #fff;
+      border-radius: 16px;
+    }
+
+    .event-side-item {
+      display: grid;
+      grid-template-columns: 200px 148px minmax(0, 1fr);
+      gap: 10px;
+      padding: 10px 12px;
+      border-bottom: 1px solid var(--line);
+      cursor: default;
+      align-items: center;
+      text-align: center;
+    }
+
+    .event-side-item:last-child {
+      border-bottom: 0;
+    }
+
+    .event-side-item:hover {
+      background: #fff;
+    }
+
+    #eventListPageView .recent-header {
+      grid-template-columns: 200px 148px minmax(0, 1fr);
+      text-align: center;
+    }
+
+    #eventListPageView .recent-header > div,
+    .event-side-item > div {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+    }
+
+    #eventListPageView .event-type-chip {
+      justify-content: center;
+      width: 100%;
+    }
+
+    .scenario-modal-card {
+      width: min(900px, 100%);
+    }
+
+    .scenario-modal-video {
+      position: relative;
+      width: 100%;
+      aspect-ratio: 16 / 9;
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      background: #0f172a;
+      display: grid;
+      place-items: center;
+      overflow: hidden;
+      color: #e5e7eb;
+      margin-bottom: 14px;
+    }
+
+    .scenario-modal-video video {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      display: block;
+      background: #0f172a;
+    }
+
+    #scenarioModalPlaceholder {
       position: absolute;
+      inset: 0;
+      display: grid;
+      place-items: center;
+      padding: 20px;
+      text-align: center;
+      background: rgba(15, 23, 42, 0.42);
+    }
+
+    .event-banner {
+      position: fixed;
+      left: 50%;
+      bottom: 20px;
+      z-index: 4900;
+      transform: translateX(-50%);
+      padding: 12px 18px;
+      border-radius: 999px;
+      background: rgba(31, 41, 55, 0.92);
+      color: #fff;
+      box-shadow: 0 14px 40px rgba(15, 23, 42, 0.25);
+      font-weight: 700;
+    }
+
+    .modal-backdrop {
+      position: fixed;
       inset: 0;
       z-index: 5000;
       display: flex;
       align-items: center;
       justify-content: center;
-      pointer-events: none;
-      padding: 18px;
+      padding: 20px;
+      background: rgba(15, 23, 42, 0.48);
     }
-    .map-overlay.hidden {
-      display: none;
-    }
-    .overlay-card {
-      width: min(960px, calc(100vw - 72px));
-      max-height: calc(100% - 36px);
-      border-radius: 16px;
+
+    .modal-card {
+      width: min(680px, 100%);
+      max-height: calc(100vh - 40px);
       overflow: hidden;
-      border: 1px solid rgba(255,255,255,0.28);
-      background: rgba(11, 18, 32, 0.94);
-      color: #fff;
-      box-shadow: 0 22px 48px rgba(2, 8, 23, 0.36);
-      pointer-events: auto;
+      border-radius: 22px;
+      border: 1px solid var(--line-strong);
+      background: #fff;
+      box-shadow: 0 24px 60px rgba(15, 23, 42, 0.28);
     }
-    .overlay-head {
+
+    .modal-head {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      gap: 10px;
-      padding: 12px 14px;
-      border-bottom: 1px solid rgba(255,255,255,0.12);
-      font-weight: 800;
-    }
-    .overlay-head button {
-      padding: 6px 10px;
-      border-radius: 999px;
-      border: 1px solid rgba(255,255,255,0.18);
-      background: rgba(255,255,255,0.08);
-      color: #fff;
-    }
-    .overlay-body {
-      padding: 12px 14px 14px;
-    }
-    .site-meta {
-      display: grid;
-      gap: 8px;
-      font-size: 13px;
-      color: var(--muted);
-    }
-    .site-meta strong { color: var(--ink); }
-    .scenario-video {
-      position: relative;
-      width: 100%;
-      aspect-ratio: 16 / 9;
-      border-radius: 12px;
-      overflow: hidden;
-      background: #0b1220;
-      border: 1px solid var(--line);
-    }
-    .scenario-video video {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-      display: block;
-    }
-    .scenario-video img {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-      display: block;
-      background: #000;
-    }
-    .scenario-box {
-      position: absolute;
-      border: 2px solid #ef4444;
-      box-shadow: 0 0 0 9999px rgba(15, 23, 42, 0.12) inset;
-      pointer-events: none;
-      border-radius: 6px;
-    }
-    .event-banner {
-      position: fixed;
-      left: 50%;
-      bottom: 18px;
-      transform: translateX(-50%);
-      min-width: 280px;
-      max-width: calc(100vw - 32px);
-      padding: 12px 18px;
-      border-radius: 999px;
-      background: rgba(185, 28, 28, 0.96);
-      color: #fff;
-      font-weight: 800;
-      text-align: center;
-      box-shadow: 0 14px 40px rgba(127, 29, 29, 0.32);
-      z-index: 100;
-    }
-
-    .web-grid {
-      display: grid;
-      grid-template-columns: 1.2fr 1.6fr;
-      gap: 14px;
-      animation: rise 0.45s ease both;
-    }
-    .row2 {
-      display: grid;
-      grid-template-columns: 1.4fr 1fr;
-      gap: 14px;
-      margin-top: 14px;
-      animation: rise 0.55s ease both;
-    }
-    .card {
-      border: 1px solid var(--line);
-      background: var(--card);
-      border-radius: 14px;
-      box-shadow: 0 8px 22px rgba(2, 8, 23, 0.04);
-      overflow: hidden;
-    }
-    .card h3 {
-      margin: 0;
-      padding: 12px 14px;
-      border-bottom: 1px solid var(--line);
-      font-size: 16px;
-    }
-    .body { padding: 12px 14px; }
-    .muted { color: var(--muted); font-size: 13px; }
-
-    .split {
-      display: grid;
-      grid-template-columns: 160px 1fr;
       gap: 12px;
-    }
-    .list {
-      border: 1px solid var(--line);
-      border-radius: 10px;
-      overflow: auto;
-      max-height: 260px;
-      background: #fff;
-    }
-    .item {
-      border-bottom: 1px solid #edf2f7;
-      padding: 10px;
-      font-size: 13px;
-      cursor: pointer;
-    }
-    .item:last-child { border-bottom: 0; }
-    .item:hover { background: #f8fafc; }
-
-    .metrics {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 8px;
-      margin-bottom: 12px;
-    }
-    .metric {
-      border: 1px solid var(--line);
-      border-radius: 10px;
-      padding: 10px;
-      background: #f8fbff;
-    }
-    .metric .k { font-size: 12px; color: var(--muted); }
-    .metric .v { font-size: 18px; font-weight: 800; margin-top: 2px; }
-
-    .control { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 10px; }
-    select, input, button {
-      font: inherit;
-      padding: 8px 10px;
-      border-radius: 9px;
-      border: 1px solid var(--line);
-      background: #fff;
-    }
-    .control input { min-width: 180px; flex: 1 1 220px; }
-    .control select { min-width: 180px; flex: 1 1 220px; }
-    button { cursor: pointer; font-weight: 700; }
-    .btn-primary { background: var(--brand); color: #fff; border-color: var(--brand); }
-    .btn-accent { background: var(--accent); color: #fff; border-color: var(--accent); }
-    .btn-danger { background: var(--danger); color: #fff; border-color: var(--danger); }
-    .scenario-btn {
-      background: #fff;
-      color: var(--ink);
-      border-color: var(--line);
-      transition: all 0.18s ease;
-    }
-    .scenario-btn.active {
-      background: var(--danger);
-      color: #fff;
-      border-color: var(--danger);
-      box-shadow: 0 0 0 2px rgba(220, 38, 38, 0.2);
+      padding: 14px 14px 8px;
+      font-size: 18px;
+      font-weight: 800;
     }
 
-    .video-panel {
-      border: 1px solid var(--line);
-      border-radius: 10px;
+    .modal-body {
+      padding: 0 14px 14px;
+    }
+
+    .modal-image {
       width: 100%;
-      min-height: 220px;
-      height: auto;
-      aspect-ratio: 16 / 9;
+      aspect-ratio: 16 / 10;
+      border-radius: 18px;
+      border: 1px solid var(--line);
+      background: #f8fafc;
+      overflow: hidden;
       display: grid;
       place-items: center;
-      background: #0b1220;
-      color: #dbeafe;
-      overflow: hidden;
+      color: var(--muted);
+      margin-bottom: 10px;
     }
-    iframe { width: 100%; height: 100%; border: 0; object-fit: contain; }
-    .video-panel video {
+
+    .modal-image img {
       width: 100%;
       height: 100%;
-      max-width: 100%;
-      max-height: 100%;
-      object-fit: contain;
-      background: #000;
+      object-fit: cover;
+      display: block;
     }
 
-    .log {
-      margin-top: 10px;
-      border: 1px solid var(--line);
-      border-radius: 10px;
-      max-height: 150px;
-      overflow: auto;
-      font-size: 12px;
-      background: #f8fafc;
-      padding: 8px;
-      line-height: 1.5;
+    .detail-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px 12px;
     }
 
-    .app-wrap {
-      max-width: 460px;
-      margin: 0 auto;
-      animation: rise 0.45s ease both;
+    .detail-field {
+      display: grid;
+      gap: 5px;
     }
-    .phone {
-      border: 1px solid var(--line);
-      border-radius: 22px;
-      background: #fff;
-      box-shadow: 0 12px 36px rgba(0, 0, 0, 0.09);
-      overflow: hidden;
-      margin-bottom: 14px;
+
+    .detail-field label {
+      font-size: 14px;
+      color: var(--muted);
+      font-weight: 700;
     }
-    .phone-head {
-      padding: 12px;
-      border-bottom: 1px solid var(--line);
+
+    .detail-field > label {
+      text-align: left;
+      justify-self: start;
+    }
+
+    .detail-value {
+      min-height: 22px;
       font-size: 15px;
-      font-weight: 800;
-      display: flex;
-      justify-content: space-between;
+      line-height: 1.35;
+    }
+
+    .radio-row {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      column-gap: 8px;
       align-items: center;
-    }
-    .phone-body { padding: 12px; }
-    #appMap { width: 100%; height: 250px; border-radius: 12px; border: 1px solid var(--line); }
-    .event-pill {
-      display: flex;
-      justify-content: space-between;
-      border-bottom: 1px solid #eef2f7;
-      padding: 8px 2px;
-      font-size: 13px;
-    }
-    .route-grid { display: grid; gap: 8px; }
-    .route-grid input { width: 100%; }
-
-    .hidden { display: none !important; }
-
-    @keyframes rise {
-      from { opacity: 0; transform: translateY(8px); }
-      to { opacity: 1; transform: translateY(0); }
+      min-height: 22px;
+      padding: 0;
+      width: 100%;
     }
 
-    @media (max-width: 980px) {
-      .site-shell { grid-template-columns: 1fr; }
-      .sidebar { position: static; }
-      .site-main-map { min-height: 420px; height: 56vh; }
-      .map-overlay {
-        inset: 0;
-        padding: 10px;
+    .radio-row input[type="radio"] {
+      width: 14px;
+      height: 14px;
+      min-width: 0;
+      min-height: 0;
+      padding: 0;
+      margin: 0 4px 0 0;
+      border: 0;
+      background: transparent;
+      transform: scale(1);
+      transform-origin: center;
+    }
+
+    .radio-row label {
+      display: inline-flex;
+      align-items: center;
+      font-size: 11px;
+      white-space: nowrap;
+      gap: 0;
+      margin-right: 0;
+      line-height: 1.2;
+    }
+
+
+    textarea {
+      width: 100%;
+      min-height: 64px;
+      border: 1px solid var(--line-strong);
+      padding: 10px;
+      resize: none;
+      font: inherit;
+      border-radius: 12px;
+    }
+
+    .empty-box {
+      padding: 18px;
+      border: 1px dashed var(--line-strong);
+      text-align: center;
+      color: var(--muted);
+      background: #fbfdff;
+      border-radius: 16px;
+    }
+
+    @media (max-width: 1440px) {
+      .main-layout,
+      .dashboard-layout,
+      .event-page-layout {
+        grid-template-columns: 1fr;
       }
-      .overlay-card {
-        width: 100%;
-        max-height: calc(100% - 20px);
-      }
-      .web-grid, .row2 { grid-template-columns: 1fr; }
-      .split { grid-template-columns: 1fr; }
-      .metrics { grid-template-columns: repeat(3, minmax(0,1fr)); }
-      .video-panel { min-height: 180px; }
     }
 
-    body.app-mode .topbar {
-      display: none;
-    }
-    body.app-mode .container {
-      padding: 8px;
-    }
-    body.app-mode .app-wrap {
-      max-width: 520px;
+    @media (max-width: 1024px) {
+      .app-shell {
+        grid-template-columns: 1fr;
+      }
+
+      .sidebar-body {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .detail-grid,
+      .recent-header,
+      .recent-row,
+      .event-side-item {
+        grid-template-columns: 1fr;
+      }
+
+      .detect-button-grid {
+        grid-template-columns: 1fr;
+      }
     }
   </style>
 </head>
 <body>
   <header class="topbar">
     <div class="title">교통 및 사고 관리 대시보드</div>
-    <nav class="nav">
-      <a id="linkWeb" href="/site">웹사이트</a>
+    <div class="top-actions">
+      <a id="linkWeb" href="/site">메인 화면</a>
       <a href="/docs" target="_blank" rel="noreferrer">API Docs</a>
-    </nav>
+    </div>
   </header>
 
   <main class="container">
-    <section id="siteMainView">
-      <div class="site-shell">
-        <aside class="sidebar">
-          <article class="side-box">
-            <h3>사고 감지 테스트</h3>
-            <div class="side-body stack">
-              <button id="scenarioFire" class="scenario-btn active">화재 감지 테스트</button>
-              <button id="scenarioWrongWay" class="scenario-btn">역주행 감지 테스트</button>
-              <button id="scenarioTrafficJam" class="scenario-btn">교통체증 감지 테스트</button>
-              <button id="scenarioFloating" class="scenario-btn">부유물 감지 테스트</button>
-              <button id="scenarioAbandoned" class="scenario-btn">부화물 감지 테스트</button>
-              <button id="scenarioEmergency" class="scenario-btn">긴급차량 감지 테스트</button>
-            </div>
-          </article>
+    <div class="app-shell">
+      <aside class="sidebar">
+        <div class="sidebar-body">
+          <button id="btnIncidentListMenu" class="menu-button">돌발 상황 리스트</button>
+          <div id="scenarioGroupTitle" class="group-title">
+            <span>사고 감지 테스트</span>
+            <span id="scenarioToggleIcon">▼</span>
+          </div>
 
-          <article class="side-box">
-            <h3>선택한 CCTV</h3>
-            <div class="side-body">
-              <div id="selectedCctvMeta" class="site-meta">
-                <div><strong>선택된 CCTV가 없습니다.</strong></div>
-                <div>지도 마커를 클릭하면 LIVE 영상을 볼 수 있습니다.</div>
-              </div>
-              <div id="siteLivePanel" class="video-panel" style="margin-top:10px; min-height: 180px;">CCTV LIVE</div>
-              <div id="siteLiveLog" class="log"></div>
-            </div>
-          </article>
+          <div id="scenarioButtonGroup" class="hidden">
+            <button id="scenarioFire" class="scenario-btn">화재 감지 테스트</button>
+            <button id="scenarioWrongWay" class="scenario-btn">역주행 감지 테스트</button>
+            <button id="scenarioTrafficJam" class="scenario-btn">교통체증 감지 테스트</button>
+            <button id="scenarioAbandoned" class="scenario-btn">부화물 감지 테스트</button>
+            <button id="scenarioEmergency" class="scenario-btn">긴급차량 감지 테스트</button>
+          </div>
+        </div>
+        <div class="sidebar-footer">
+          <button id="btnOpenDetail" class="menu-button">관리자 대시보드</button>
+        </div>
+      </aside>
 
-          <article class="side-box">
-            <h3>화면 이동</h3>
-            <div class="side-body stack">
-              <button id="btnOpenDetail" class="btn-primary">상세화면 열기</button>
-            </div>
-          </article>
-        </aside>
-
-        <section>
-          <article class="card">
-            <h3>대한민국 CCTV 지도</h3>
-            <div class="body">
-              <div class="map-stage">
+      <div class="page-stack">
+        <section id="siteMainView" class="page-view">
+          <div class="main-layout">
+            <article class="card map-card">
+              <div class="map-shell">
+                <div class="map-label">지도 영역</div>
                 <div id="siteMainMap" class="site-main-map"></div>
-                <div id="scenarioOverlay" class="map-overlay hidden">
-                  <div class="overlay-card">
-                    <div class="overlay-head">
-                      <span id="scenarioTitle">테스트 감지 화면</span>
-                      <button id="closeScenarioOverlay">닫기</button>
-                    </div>
-                    <div class="overlay-body">
-                      <div class="scenario-video" id="scenarioPreview">
-                        <video id="scenarioVideo" muted playsinline controls></video>
-                        <img id="scenarioStream" class="hidden" alt="실시간 감지 스트림" />
-                        <div id="scenarioBox" class="scenario-box hidden"></div>
-                      </div>
-                      <div id="scenarioResult" class="log"></div>
-                    </div>
+              </div>
+            </article>
+
+            <div class="main-side">
+              <article class="card section-card">
+                <div class="section-title">선택한 CCTV</div>
+                <div class="section-body">
+                  <div class="meta-block">
+                    <div class="meta-title">설치지점명</div>
+                    <div id="selectedCctvMeta">선택된 CCTV가 없습니다.</div>
+                  </div>
+                  <div id="siteLivePanel" class="video-panel" style="margin-top: 14px;">CCTV 영상 영역</div>
+                </div>
+              </article>
+
+              <article class="card section-card">
+                <div class="section-title">오늘의 돌발정보</div>
+                <div class="section-body">
+                  <div id="todayInfoList" class="today-list"></div>
+                </div>
+              </article>
+
+              <article class="card section-card recent-card-fill">
+                <div class="section-title">최근 돌발 정보</div>
+                <div class="section-body">
+                  <div class="recent-header">
+                    <div>시간</div>
+                    <div>돌발 정보</div>
+                    <div>설치지점명</div>
+                  </div>
+                  <div id="recentEventsMain" class="scroll-box recent-list"></div>
+                </div>
+              </article>
+            </div>
+          </div>
+        </section>
+
+        <section id="webView" class="page-view hidden">
+          <div class="dashboard-layout">
+            <div class="dashboard-left">
+              <article class="card dashboard-card">
+                <div class="section-title">CCTV 목록</div>
+                <div class="dashboard-body">
+                  <div class="dashboard-filter-row">
+                    <label>
+                      연결상태:
+                      <select id="dashboardConnectionFilter">
+                        <option value="all">전체</option>
+                        <option value="connected">연결됨</option>
+                        <option value="disconnected">연결끊김</option>
+                      </select>
+                    </label>
+                    <label>
+                      분석여부:
+                      <select id="dashboardAnalyzeFilter">
+                        <option value="all">전체</option>
+                        <option value="analyzed">분석중</option>
+                        <option value="idle">미분석</option>
+                      </select>
+                    </label>
+                  </div>
+                  <div class="table-wrap">
+                    <table>
+                      <thead>
+                        <tr>
+                          <th style="width: 80px;">번호</th>
+                          <th>이름</th>
+                          <th style="width: 120px;">연결상태</th>
+                          <th style="width: 120px;">분석여부</th>
+                        </tr>
+                      </thead>
+                      <tbody id="dashboardCctvTable"></tbody>
+                    </table>
                   </div>
                 </div>
-              </div>
+              </article>
+
+              <article class="card dashboard-card">
+                <div class="section-title">감지 TEST</div>
+                <div class="dashboard-body">
+                  <input id="uploadFileInput" type="file" accept="image/*,video/*" class="hidden" />
+                  <div id="uploadDropZone" class="detect-test-box">
+                    <div>
+                      <div style="font-size: 18px; font-weight: 800; color: var(--text); margin-bottom: 10px;">파일을 업로드하려면 클릭하세요</div>
+                      <div id="uploadFileName">이미지 또는 비디오 파일</div>
+                    </div>
+                  </div>
+
+                  <div class="upload-actions">
+                    <button id="btnUpload" class="action-button">업로드</button>
+                    <button id="btnAnalyze" class="action-button">AI 분석</button>
+                  </div>
+
+                  <div class="analysis-title">분석 결과</div>
+                  <div class="analysis-divider"></div>
+                  <div id="testResult" class="analysis-result-list"></div>
+                </div>
+              </article>
             </div>
-          </article>
+
+            <article class="card dashboard-card dashboard-right-card">
+              <div class="section-title">돌발 상황 목록</div>
+              <div class="dashboard-body">
+                <div class="table-wrap">
+                  <table>
+                    <thead>
+                      <tr>
+                        <th style="width: 204px;">시간</th>
+                        <th style="width: 64px;">번호</th>
+                        <th>이름</th>
+                        <th style="width: 120px;">종류</th>
+                        <th style="width: 110px;">신뢰도</th>
+                        <th style="width: 110px;">오탐확인</th>
+                        <th style="width: 120px;">처리상태</th>
+                      </tr>
+                    </thead>
+                    <tbody id="dashboardEventTable"></tbody>
+                  </table>
+                </div>
+              </div>
+            </article>
+          </div>
+        </section>
+
+        <section id="eventListPageView" class="page-view hidden">
+          <div class="event-page-layout">
+            <article class="card event-page-card">
+              <div class="section-title">CCTV 검색 및 LIVE</div>
+              <div class="section-body">
+                <div class="search-row">
+                  <input id="cctvRegion" placeholder="지역으로 조회" />
+                  <input id="cctvKeyword" placeholder="키워드(이름, 위치, ID)" />
+                  <button id="btnCctvSearch" class="action-button">조회</button>
+                  <button id="btnCctvReset" class="action-button">초기화</button>
+                </div>
+
+                <div class="control-row">
+                  <select id="cctvSelect">
+                    <option value="">CCTV를 선택하세요</option>
+                  </select>
+                  <button id="btnLoadStream" class="action-button">Live 연결</button>
+                  <button id="btnRefresh" class="action-button">새로고침</button>
+                </div>
+
+                <div style="margin-top: 18px;">
+                  <div class="meta-title" style="margin-bottom: 8px;">선택한 CCTV</div>
+                  <div id="eventPageSelectedCctvMeta" class="meta-block">선택된 CCTV가 없습니다.</div>
+                </div>
+
+                <div id="videoPanel" class="video-panel" style="margin-top: 14px;">선택한 CCTV LIVE</div>
+              </div>
+            </article>
+
+            <article class="card event-page-card">
+              <div class="section-title">돌발 상황 리스트</div>
+              <div class="section-body">
+                <div class="event-filter-row">
+                  <select id="eventTypeFilter">
+                    <option value="">돌발상황 종류 전체</option>
+                    <option value="fire_detected">화재</option>
+                    <option value="wrong_way_detected">역주행</option>
+                    <option value="traffic_jam_detected">교통체증</option>
+                    <option value="abandoned_object_detected">부화물</option>
+                    <option value="emergency_vehicle_detected">긴급차량</option>
+                  </select>
+                  <select id="eventTimeFilter">
+                    <option value="all">시간 전체</option>
+                    <option value="6">지난 6시간</option>
+                    <option value="24">지난 24시간</option>
+                    <option value="72">지난 3일</option>
+                  </select>
+                  <button id="btnLoadEvents" class="action-button">조회</button>
+                </div>
+
+                <div class="recent-header" style="margin-bottom: 10px;">
+                  <div>시간</div>
+                  <div>종류</div>
+                  <div>위치</div>
+                </div>
+
+                <div id="eventList" class="event-side-list"></div>
+              </div>
+            </article>
+          </div>
         </section>
       </div>
-    </section>
-
-    <section id="webView">
-      <div class="web-grid">
-        <article class="card">
-          <h3>관리자 대시보드</h3>
-          <div class="body">
-            <div class="metrics">
-              <div class="metric"><div class="k">CCTV 수</div><div id="metricCctv" class="v">-</div></div>
-              <div class="metric"><div class="k">이벤트 호출</div><div id="metricEventCall" class="v">-</div></div>
-              <div class="metric"><div class="k">알림 상태</div><div id="metricNoti" class="v">-</div></div>
-            </div>
-            <div class="split">
-              <div>
-                <div class="muted">CCTV 리스트</div>
-                <div id="cctvList" class="list"></div>
-              </div>
-              <div>
-                <div class="muted">최근 이벤트</div>
-                <div id="recentEvents" class="list"></div>
-              </div>
-            </div>
-          </div>
-        </article>
-
-        <article class="card">
-          <h3>CCTV 모니터링</h3>
-          <div class="body">
-            <div class="control">
-              <input id="cctvRegion" placeholder="지역 필터 (예: 강남)" />
-              <input id="cctvKeyword" placeholder="키워드 검색 (이름/위치/ID)" />
-              <button id="btnCctvSearch">조회</button>
-              <button id="btnCctvReset">초기화</button>
-            </div>
-            <div class="control">
-              <select id="cctvSelect"></select>
-              <button id="btnLoadStream" class="btn-primary">LIVE 연결</button>
-              <button id="btnRefresh" class="btn-accent">새로고침</button>
-            </div>
-            <div id="videoPanel" class="video-panel">LIVE 영상</div>
-            <div id="liveLog" class="log"></div>
-          </div>
-        </article>
-      </div>
-
-      <div class="row2">
-        <article class="card">
-          <h3>이벤트 리스트</h3>
-          <div class="body">
-            <div class="control">
-              <select id="eventTypeFilter">
-                <option value="">전체</option>
-                <option value="fire">화재</option>
-                <option value="traffic_jam">교통체증</option>
-                <option value="wrong_way">역주행</option>
-              </select>
-              <select id="eventSortFilter">
-                <option value="desc">시간: 최신순</option>
-                <option value="asc">시간: 오래된순</option>
-              </select>
-              <button id="btnLoadEvents">조회</button>
-            </div>
-            <div id="eventList" class="list"></div>
-          </div>
-        </article>
-
-        <article class="card">
-          <h3>테스트 영상 업로드</h3>
-          <div class="body">
-            <div class="control">
-              <input id="fakeFile" type="text" placeholder="파일명(테스트용)" />
-              <button id="btnUpload">업로드</button>
-              <button id="btnAnalyze" class="btn-primary">AI 분석</button>
-            </div>
-            <div class="control">
-              <button id="btnDetectFire" class="btn-danger">화재 감지 API</button>
-              <button id="btnDetectJam">체증 감지 API</button>
-              <button id="btnDetectWrong">역주행 감지 API</button>
-              <button id="btnDetectFloating">부유물 감지 API</button>
-              <button id="btnDetectAbandoned">부화물 감지 API</button>
-              <button id="btnDetectEmergency">긴급차량 감지 API</button>
-            </div>
-            <div id="testResult" class="log"></div>
-          </div>
-        </article>
-      </div>
-    </section>
-
+    </div>
   </main>
 
   <div id="eventBanner" class="event-banner hidden"></div>
+
+  <div id="scenarioModal" class="modal-backdrop hidden">
+    <div class="modal-card scenario-modal-card">
+      <div class="modal-head">
+        <span id="scenarioModalTitle">사고 감지 테스트</span>
+        <button id="closeScenarioModal" class="action-button">닫기</button>
+      </div>
+      <div class="modal-body">
+        <div class="scenario-modal-video">
+          <video id="scenarioModalVideo" controls muted playsinline></video>
+          <div id="scenarioModalPlaceholder">동영상 파일을 나중에 연결할 수 있습니다.</div>
+        </div>
+        <div id="scenarioModalDescription" class="detail-value">테스트를 진행하면 결과가 아래에 반영됩니다.</div>
+      </div>
+    </div>
+  </div>
+
+  <div id="eventModal" class="modal-backdrop hidden">
+    <div class="modal-card">
+      <div class="modal-head">
+        <span>돌발 상황 상세</span>
+        <button id="closeEventModal" class="action-button">닫기</button>
+      </div>
+      <div class="modal-body">
+        <div id="modalImageBox" class="modal-image">감지 이미지가 없습니다.</div>
+
+        <div class="detail-grid">
+          <div class="detail-field">
+            <label>시간</label>
+            <div id="modalEventTime" class="detail-value">-</div>
+          </div>
+          <div class="detail-field">
+            <label>번호</label>
+            <div id="modalEventId" class="detail-value">-</div>
+          </div>
+          <div class="detail-field">
+            <label>설치지점명</label>
+            <div id="modalEventLocation" class="detail-value">-</div>
+          </div>
+          <div class="detail-field">
+            <label>종류</label>
+            <div id="modalEventType" class="detail-value">-</div>
+          </div>
+          <div class="detail-field">
+            <label>신뢰도</label>
+            <div id="modalEventConfidence" class="detail-value">-</div>
+          </div>
+          <div class="detail-field">
+            <label>오탐확인</label>
+            <div class="radio-row">
+              <label><input type="radio" name="falsePositiveCheck" value="정상" checked /> 정상</label>
+              <label><input type="radio" name="falsePositiveCheck" value="오탐" /> 오탐</label>
+              <label><input type="radio" name="falsePositiveCheck" value="확인불가" /> 확인불가</label>
+            </div>
+          </div>
+          <div class="detail-field">
+            <label>처리상태</label>
+            <select id="modalProcessStatus">
+              <option value="완료" selected>완료</option>
+              <option value="처리중">처리중</option>
+              <option value="대기">대기</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="detail-field" style="margin-top: 18px;">
+          <label>메모</label>
+          <textarea id="modalMemo" placeholder="상세 메모를 입력하세요."></textarea>
+        </div>
+
+        <div style="display: flex; justify-content: flex-end; margin-top: 14px;">
+          <button id="saveEventModal" class="action-button">저장</button>
+        </div>
+      </div>
+    </div>
+  </div>
 
   <script>
     const state = {
       cctvs: [],
       events: [],
-      kakaoLoaded: false,
-      mapProvider: "none",
-      map: null,
-      markers: [],
-      leafletMap: null,
-      leafletMarkers: [],
       siteMap: null,
       siteMapMarkers: [],
       siteMode: "main",
-      hlsReady: false,
       activeHls: null,
       activeStreamRequestId: 0,
       cctvKeyword: "",
       cctvRegion: "",
+      uploadedFile: null,
       scenarioCloseTimer: null,
+      selectedCctvId: null,
+      selectedEventId: null,
     };
 
     const scenarioMap = {
       fire: {
         label: "화재",
         endpoint: "/fire/detect",
-        video: "https://storage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4",
+        resultLabel: "화재 감지",
+        videoUrl: "",
       },
       wrong_way: {
         label: "역주행",
         endpoint: "/wrong-way/detect",
-        video: "https://storage.googleapis.com/gtv-videos-bucket/sample/ForBiggerJoyrides.mp4",
+        resultLabel: "역주행 감지",
+        videoUrl: "",
       },
       traffic_jam: {
         label: "교통체증",
         endpoint: "/traffic-jam/detect",
-        video: "https://storage.googleapis.com/gtv-videos-bucket/sample/ForBiggerJoyrides.mp4",
-      },
-      floating_object: {
-        label: "부유물",
-        endpoint: "/abandoned-object/detect-floating",
-        video: "/abandoned-object/floating-video",
+        resultLabel: "교통체증 감지",
+        videoUrl: "",
       },
       abandoned_object: {
         label: "부화물",
         endpoint: "/abandoned-object/detect",
-        video: "https://storage.googleapis.com/gtv-videos-bucket/sample/ForBiggerFun.mp4",
+        resultLabel: "부화물 감지",
+        videoUrl: "",
       },
       emergency_vehicle: {
         label: "긴급차량",
         endpoint: "/emergency-vehicle/detect",
-        video: "https://storage.googleapis.com/gtv-videos-bucket/sample/ForBiggerEscapes.mp4",
+        resultLabel: "긴급차량 감지",
+        videoUrl: "",
       },
     };
 
-    const fallbackScenarioBoxes = {
-      fire: [{ x: 0.38, y: 0.28, w: 0.22, h: 0.32 }],
-      wrong_way: [{ x: 0.42, y: 0.54, w: 0.18, h: 0.24 }],
-      traffic_jam: [{ x: 0.18, y: 0.48, w: 0.56, h: 0.34 }],
-      floating_object: [{ x: 0.35, y: 0.38, w: 0.28, h: 0.22 }],
-      abandoned_object: [{ x: 0.44, y: 0.56, w: 0.18, h: 0.22 }],
-      emergency_vehicle: [{ x: 0.28, y: 0.44, w: 0.24, h: 0.24 }],
-    };
+    const todayInfoConfig = [
+      { key: "fire_detected", label: "화재" },
+      { key: "wrong_way_detected", label: "역주행" },
+      { key: "traffic_jam_detected", label: "교통체증" },
+      { key: "abandoned_object_detected", label: "부화물" },
+      { key: "emergency_vehicle_detected", label: "긴급차량" },
+    ];
 
-    async function apiGet(url) {
-      const res = await fetch(url);
-      if (!res.ok) throw new Error(`${res.status} ${res.statusText}`);
-      return res.json();
-    }
-    async function apiPost(url, body) {
-      const res = await fetch(url, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: body ? JSON.stringify(body) : "{}"
-      });
-      if (!res.ok) throw new Error(`${res.status} ${res.statusText}`);
-      return res.json();
-    }
-
-    function log(el, msg) {
-      const line = `[${new Date().toLocaleTimeString()}] ${msg}`;
-      el.textContent = line + "\n" + el.textContent;
-    }
-
-    function showEventBanner(text) {
-      const banner = document.getElementById("eventBanner");
-      if (!banner) return;
-      banner.textContent = text;
-      banner.classList.remove("hidden");
-      clearTimeout(showEventBanner._timer);
-    }
-
-    function hideEventBanner() {
-      const banner = document.getElementById("eventBanner");
-      if (!banner) return;
-      clearTimeout(showEventBanner._timer);
-      banner.classList.add("hidden");
-    }
-
-    function setActiveScenarioButton(type) {
-      const mapping = {
-        fire: "scenarioFire",
-        wrong_way: "scenarioWrongWay",
-        traffic_jam: "scenarioTrafficJam",
-        floating_object: "scenarioFloating",
-        abandoned_object: "scenarioAbandoned",
-        emergency_vehicle: "scenarioEmergency",
-      };
-
-      const ids = Object.values(mapping);
-      for (const id of ids) {
-        const btn = document.getElementById(id);
-        if (btn) btn.classList.remove("active");
-      }
-
-      const activeId = mapping[type];
-      if (activeId) {
-        const activeBtn = document.getElementById(activeId);
-        if (activeBtn) activeBtn.classList.add("active");
-      }
-    }
-
-    function openScenarioOverlay(title) {
-      const overlay = document.getElementById("scenarioOverlay");
-      const titleEl = document.getElementById("scenarioTitle");
-      if (titleEl) titleEl.textContent = title;
-      if (overlay) overlay.classList.remove("hidden");
-    }
-
-    function closeScenarioOverlay() {
-      const overlay = document.getElementById("scenarioOverlay");
-      const video = document.getElementById("scenarioVideo");
-      const streamImg = document.getElementById("scenarioStream");
-      if (video) {
-        video.pause();
-        video.removeAttribute("src");
-        video.load();
-        video.classList.remove("hidden");
-      }
-      if (streamImg) {
-        streamImg.classList.add("hidden");
-        streamImg.removeAttribute("src");
-      }
-      if (state.scenarioCloseTimer) {
-        clearTimeout(state.scenarioCloseTimer);
-        state.scenarioCloseTimer = null;
-      }
-      renderScenarioBox([]);
-      hideEventBanner();
-      if (overlay) overlay.classList.add("hidden");
-    }
-
-    async function playScenarioVideo(videoEl, src, fallbackSrc = "/abandoned-object/floating-video") {
-      if (!videoEl || !src) return;
-      const streamImg = document.getElementById("scenarioStream");
-
-      const cacheBustedSrc = src.includes("?") ? `${src}&v=${Date.now()}` : `${src}?v=${Date.now()}`;
-      const cacheBustedFallback = fallbackSrc.includes("?") ? `${fallbackSrc}&v=${Date.now()}` : `${fallbackSrc}?v=${Date.now()}`;
-
-      if (streamImg) {
-        streamImg.classList.add("hidden");
-        streamImg.removeAttribute("src");
-      }
-      videoEl.classList.remove("hidden");
-      videoEl.loop = false;
-      videoEl.pause();
-      videoEl.src = cacheBustedSrc;
-      videoEl.currentTime = 0;
-      videoEl.load();
-
-      videoEl.onerror = async () => {
-        if (videoEl.dataset.fallbackTried === "1") return;
-        videoEl.dataset.fallbackTried = "1";
-        videoEl.pause();
-        videoEl.src = cacheBustedFallback;
-        videoEl.currentTime = 0;
-        videoEl.load();
-        try {
-          await videoEl.play();
-        } catch (_) {
-          // Manual controls can still be used.
-        }
-      };
-
-      videoEl.dataset.fallbackTried = "0";
-      try {
-        await videoEl.play();
-      } catch (_) {
-        // Browser autoplay might block before user interaction; controls remain available.
-      }
-    }
-
-    function playFloatingRealtimeStream(streamUrl, durationSec = 0) {
-      const videoEl = document.getElementById("scenarioVideo");
-      const streamImg = document.getElementById("scenarioStream");
-      if (!videoEl || !streamImg || !streamUrl) return;
-
-      if (state.scenarioCloseTimer) {
-        clearTimeout(state.scenarioCloseTimer);
-        state.scenarioCloseTimer = null;
-      }
-
-      videoEl.pause();
-      videoEl.classList.add("hidden");
-      videoEl.removeAttribute("src");
-      videoEl.load();
-
-      streamImg.classList.remove("hidden");
-      streamImg.src = streamUrl.includes("?") ? `${streamUrl}&v=${Date.now()}` : `${streamUrl}?v=${Date.now()}`;
-
-      if (durationSec > 0) {
-        state.scenarioCloseTimer = setTimeout(() => {
-          closeScenarioOverlay();
-        }, Math.floor(durationSec * 1000) + 400);
-      }
-    }
-
-    async function ensureHlsLibrary() {
-      if (window.Hls) {
-        state.hlsReady = true;
+    function renderAnalysisResult(items) {
+      const target = document.getElementById("testResult");
+      if (!target) {
         return;
       }
-      await new Promise((resolve, reject) => {
+
+      const rows = Array.isArray(items) ? items : [items];
+      target.innerHTML = rows.map((item) => {
+        const title = item.title || "분석 결과";
+        const detail = item.detail || "";
+        return `
+          <div class="analysis-result-item">
+            <strong>${title}</strong>
+            <div style="margin-top: 6px; color: var(--muted);">${detail}</div>
+          </div>
+        `;
+      }).join("");
+    }
+
+    function updateUploadFileName() {
+      const target = document.getElementById("uploadFileName");
+      if (!target) {
+        return;
+      }
+      target.textContent = state.uploadedFile ? state.uploadedFile.name : "이미지 또는 비디오 파일";
+    }
+
+    function openScenarioModal(config) {
+      const modal = document.getElementById("scenarioModal");
+      const title = document.getElementById("scenarioModalTitle");
+      const video = document.getElementById("scenarioModalVideo");
+      const placeholder = document.getElementById("scenarioModalPlaceholder");
+      const description = document.getElementById("scenarioModalDescription");
+      if (!modal || !title || !video || !placeholder || !description) {
+        return;
+      }
+
+      title.textContent = `${config.label} 감지 테스트`;
+      description.textContent = `${config.label} 감지 테스트용 동영상 영역입니다. 나중에 파일을 연결할 수 있습니다.`;
+      video.pause();
+      video.removeAttribute("src");
+      video.load();
+      video.classList.add("hidden");
+      placeholder.classList.remove("hidden");
+
+      if (config.videoUrl) {
+        video.src = config.videoUrl;
+        video.classList.remove("hidden");
+        placeholder.classList.add("hidden");
+      }
+
+      modal.classList.remove("hidden");
+    }
+
+    function closeScenarioModal() {
+      const modal = document.getElementById("scenarioModal");
+      const video = document.getElementById("scenarioModalVideo");
+      if (video) {
+        video.pause();
+        video.classList.add("hidden");
+      }
+      if (modal) {
+        modal.classList.add("hidden");
+      }
+    }
+
+    async function apiGet(url) {
+      const response = await fetch(url);
+      if (!response.ok) {
+        const text = await response.text();
+        throw new Error(text || `GET ${url} 실패`);
+      }
+      return response.json();
+    }
+
+    async function apiPost(url, payload = null) {
+      const response = await fetch(url, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: payload ? JSON.stringify(payload) : "{}",
+      });
+      if (!response.ok) {
+        const text = await response.text();
+        throw new Error(text || `POST ${url} 실패`);
+      }
+      return response.json();
+    }
+
+    function getCurrentPage() {
+      const params = new URLSearchParams(window.location.search);
+      if (params.get("detail") === "1") {
+        return "dashboard";
+      }
+      if (params.get("page") === "events") {
+        return "events";
+      }
+      return "main";
+    }
+
+    function movePage(pageName, selectedCctvId = null) {
+      const url = new URL(window.location.href);
+      url.searchParams.delete("detail");
+      url.searchParams.delete("page");
+      url.searchParams.delete("cctv_id");
+
+      if (pageName === "dashboard") {
+        url.searchParams.set("detail", "1");
+      } else if (pageName === "events") {
+        url.searchParams.set("page", "events");
+        if (selectedCctvId) {
+          url.searchParams.set("cctv_id", String(selectedCctvId));
+        }
+      }
+
+      window.location.href = `${url.pathname}${url.search}`;
+    }
+
+    function restoreSelectedCctvFromUrl() {
+      const params = new URLSearchParams(window.location.search);
+      const cctvId = Number(params.get("cctv_id") || 0) || null;
+      if (!cctvId) {
+        return;
+      }
+
+      state.selectedCctvId = cctvId;
+      renderSelectedCctvInfo();
+      renderCctvList();
+      renderEvents();
+    }
+
+    function showView() {
+      const page = getCurrentPage();
+      state.siteMode = page;
+
+      document.getElementById("siteMainView").classList.toggle("hidden", page !== "main");
+      document.getElementById("webView").classList.toggle("hidden", page !== "dashboard");
+      document.getElementById("eventListPageView").classList.toggle("hidden", page !== "events");
+
+      document.getElementById("btnIncidentListMenu").classList.toggle("active", page === "events");
+      document.getElementById("scenarioGroupTitle").classList.toggle("active", false);
+      document.getElementById("btnOpenDetail").classList.toggle("active", page === "dashboard");
+      document.getElementById("linkWeb").classList.toggle("active", page === "main");
+    }
+
+    function ensureLeafletLibrary() {
+      if (window.L) {
+        return Promise.resolve();
+      }
+
+      return new Promise((resolve, reject) => {
+        const css = document.createElement("link");
+        css.rel = "stylesheet";
+        css.href = "https://unpkg.com/leaflet@1.9.4/dist/leaflet.css";
+        document.head.appendChild(css);
+
         const script = document.createElement("script");
-        script.src = "https://cdn.jsdelivr.net/npm/hls.js@1.5.15/dist/hls.min.js";
+        script.src = "https://unpkg.com/leaflet@1.9.4/dist/leaflet.js";
         script.onload = resolve;
         script.onerror = reject;
         document.head.appendChild(script);
       });
-      state.hlsReady = !!window.Hls;
     }
 
-    async function ensureLeafletLibrary() {
-      if (window.L) return;
-
-      if (!document.getElementById("leaflet-css")) {
-        const css = document.createElement("link");
-        css.id = "leaflet-css";
-        css.rel = "stylesheet";
-        css.href = "https://unpkg.com/leaflet@1.9.4/dist/leaflet.css";
-        document.head.appendChild(css);
+    function ensureHlsLibrary() {
+      if (window.Hls) {
+        return Promise.resolve();
       }
 
-      await new Promise((resolve, reject) => {
+      return new Promise((resolve, reject) => {
         const script = document.createElement("script");
-        script.src = "https://unpkg.com/leaflet@1.9.4/dist/leaflet.js";
+        script.src = "https://cdn.jsdelivr.net/npm/hls.js@latest";
         script.onload = resolve;
         script.onerror = reject;
         document.head.appendChild(script);
@@ -815,295 +1510,409 @@
         try {
           state.activeHls.destroy();
         } catch (_) {
-          // Ignore cleanup errors.
+          // 이미 종료된 플레이어는 무시합니다.
         }
         state.activeHls = null;
       }
     }
 
-    async function getFreshStreamUrl(cctvId) {
-      const data = await apiGet(`/cctvs/${cctvId}/stream`);
-      return data.stream_url || "";
+    function getDisplayCoordinates(cctv, index) {
+      const lat = Number.parseFloat(cctv.latitude);
+      const lng = Number.parseFloat(cctv.longitude);
+
+      if (Number.isFinite(lat) && Number.isFinite(lng)) {
+        return { lat, lng };
+      }
+
+      // 실제 좌표가 없을 때 지도가 완전히 비어 보이지 않도록 임시 좌표를 만듭니다.
+      const baseLat = 37.55;
+      const baseLng = 126.98;
+      const row = Math.floor(index / 4);
+      const col = index % 4;
+      return {
+        lat: baseLat + (row * 0.05),
+        lng: baseLng + (col * 0.05),
+      };
     }
 
-    async function playLiveStream(streamUrl, cctvId, requestId, panelId = "videoPanel", logId = "liveLog") {
-      const panel = document.getElementById(panelId);
-      const logEl = document.getElementById(logId);
+    function eventTypeLabel(type) {
+      const map = {
+        fire_detected: "화재",
+        wrong_way_detected: "역주행",
+        traffic_jam_detected: "교통체증",
+        abandoned_object_detected: "부화물",
+        emergency_vehicle_detected: "긴급차량",
+      };
+      return map[type] || type || "-";
+    }
 
-      destroyActiveHls();
-      panel.style.aspectRatio = "16 / 9";
-      panel.innerHTML = "";
-      const video = document.createElement("video");
-      video.controls = true;
-      video.autoplay = true;
-      video.muted = true;
-      video.playsInline = true;
-      video.style.width = "100%";
-      video.style.height = "100%";
-      video.style.objectFit = "contain";
-      video.addEventListener("loadedmetadata", () => {
-        if (video.videoWidth > 0 && video.videoHeight > 0) {
-          panel.style.aspectRatio = `${video.videoWidth} / ${video.videoHeight}`;
-        }
-      });
-      panel.appendChild(video);
+    function eventTypeMeta(type) {
+      const map = {
+        fire_detected: { label: "화재", icon: "🔥" },
+        wrong_way_detected: { label: "역주행", icon: "⛔" },
+        traffic_jam_detected: { label: "교통체증", icon: "🚗" },
+        abandoned_object_detected: { label: "부화물", icon: "📦" },
+        emergency_vehicle_detected: { label: "긴급차량", icon: "🚑" },
+      };
+      return map[type] || { label: eventTypeLabel(type), icon: "📍" };
+    }
 
-      try {
-        await ensureHlsLibrary();
-      } catch {
-        log(logEl, "HLS 라이브러리 로드 실패");
-      }
-
-      if (window.Hls && window.Hls.isSupported()) {
-        const hls = new window.Hls({
-          maxBufferLength: 20,
-          liveSyncDurationCount: 3,
-        });
-        state.activeHls = hls;
-        hls.loadSource(streamUrl);
-        hls.attachMedia(video);
-        hls.on(window.Hls.Events.MANIFEST_PARSED, () => {
-          if (requestId !== state.activeStreamRequestId) return;
-          video.play().catch(() => {});
-        });
-        hls.on(window.Hls.Events.ERROR, async (_, data) => {
-          if (requestId !== state.activeStreamRequestId) return;
-          if (data && data.fatal) {
-            log(logEl, `LIVE 재생 오류(${cctvId}): ${data.type}`);
-
-            if (data.type === "networkError") {
-              try {
-                log(logEl, `LIVE 재연결 시도(${cctvId})...`);
-                const refreshed = await getFreshStreamUrl(cctvId);
-                if (!refreshed) throw new Error("재발급 URL 없음");
-                if (requestId !== state.activeStreamRequestId) return;
-                hls.loadSource(refreshed);
-                hls.startLoad();
-                log(logEl, `LIVE 재연결 성공(${cctvId})`);
-                return;
-              } catch (e) {
-                log(logEl, `LIVE 재연결 실패(${cctvId}): ${e.message || e}`);
-              }
-            }
-
-            panel.innerHTML = "LIVE 연결 실패";
-          }
-        });
-        log(logEl, `LIVE 연결 성공(HLS): CCTV ${cctvId}`);
-        return;
-      }
-
-      if (video.canPlayType("application/vnd.apple.mpegurl")) {
-        video.src = streamUrl;
-        video.play().catch(() => {});
-        log(logEl, `LIVE 연결 성공(Native HLS): CCTV ${cctvId}`);
-        return;
-      }
-
-      panel.innerHTML = `
-        <div style="padding:12px;text-align:center;line-height:1.6;">
-          <div style="font-weight:700;margin-bottom:6px;">브라우저에서 HLS 재생을 지원하지 않습니다.</div>
-          <a href="${streamUrl}" target="_blank" rel="noreferrer">새 창에서 영상 열기</a>
-        </div>
+    function buildEventTypeChip(type) {
+      const meta = eventTypeMeta(type);
+      return `
+        <span class="event-type-chip">
+          <span class="event-type-icon">${meta.icon}</span>
+          <span>${meta.label}</span>
+        </span>
       `;
-      log(logEl, `브라우저 HLS 미지원: CCTV ${cctvId}`);
     }
 
-    function renderCctvList() {
-      const list = document.getElementById("cctvList");
-      const select = document.getElementById("cctvSelect");
-      list.innerHTML = "";
-      select.innerHTML = "";
-
-      if (!state.cctvs.length) {
-        list.innerHTML = '<div class="item">데이터 없음</div>';
-        select.innerHTML = '<option>선택 가능 CCTV 없음</option>';
-        return;
+    function getCctvName(cctvId) {
+      const row = state.cctvs.find((item) => String(item.cctv_id) === String(cctvId));
+      if (!row) {
+        return cctvId ? `CCTV-${cctvId}` : "-";
       }
-
-      const keyword = (state.cctvKeyword || "").trim().toLowerCase();
-      let filtered = keyword
-        ? state.cctvs.filter((c) => {
-            const idTxt = String(c.cctv_id || "");
-            const nameTxt = String(c.name || "").toLowerCase();
-            const locTxt = String(c.location || "").toLowerCase();
-            return idTxt.includes(keyword) || nameTxt.includes(keyword) || locTxt.includes(keyword);
-          })
-        : state.cctvs;
-
-      if (keyword && !filtered.length && state.cctvs.length) {
-        filtered = state.cctvs;
-      }
-
-      if (!filtered.length) {
-        list.innerHTML = '<div class="item">검색 결과 없음</div>';
-        select.innerHTML = '<option>검색 결과 없음</option>';
-        document.getElementById("metricCctv").textContent = `0/${state.cctvs.length}`;
-        return;
-      }
-
-      for (const c of filtered) {
-        const lat = Number.parseFloat(c.latitude ?? c.lat ?? c.raw?.coordy ?? c.raw?.y);
-        const lng = Number.parseFloat(c.longitude ?? c.lon ?? c.lng ?? c.raw?.coordx ?? c.raw?.x);
-        const latTxt = Number.isFinite(lat) ? lat.toFixed(4) : "-";
-        const lngTxt = Number.isFinite(lng) ? lng.toFixed(4) : "-";
-        const text = `${c.name || "CCTV"} (${latTxt}, ${lngTxt})`;
-        const div = document.createElement("div");
-        div.className = "item";
-        div.textContent = text;
-        div.onclick = () => {
-          select.value = String(c.cctv_id);
-          loadStream();
-        };
-        list.appendChild(div);
-
-        const opt = document.createElement("option");
-        opt.value = String(c.cctv_id);
-        opt.textContent = c.name || `CCTV ${c.cctv_id}`;
-        opt.dataset.streamUrl = c.stream_url || "";
-        select.appendChild(opt);
-      }
-
-      document.getElementById("metricCctv").textContent = `${filtered.length}/${state.cctvs.length}`;
+      return row.name || `CCTV-${row.cctv_id}`;
     }
 
-    function normalizeEventRows(raw) {
-      if (Array.isArray(raw?.items)) return raw.items;
-      if (Array.isArray(raw?.events)) return raw.events;
-      const fallback = [
-        { type: "fire", location: "강남대로", time: "10:32" },
-        { type: "traffic_jam", location: "올림픽대로", time: "10:30" },
-        { type: "wrong_way", location: "시흥대로", time: "10:28" }
-      ];
-      return fallback;
+    function getCctvLocation(cctvId) {
+      const row = state.cctvs.find((item) => String(item.cctv_id) === String(cctvId));
+      if (!row) {
+        return "위치 정보 없음";
+      }
+      return row.location || row.name || `CCTV-${row.cctv_id}`;
     }
 
-    function renderEvents() {
-      const list = document.getElementById("eventList");
-      const recent = document.getElementById("recentEvents");
-      list.innerHTML = "";
-      recent.innerHTML = "";
-
-      const rows = state.events.length ? state.events : normalizeEventRows({});
-      for (const e of rows) {
-        const line = `${e.type || e.event_type || "event"}  ${e.location || e.road || "-"}  ${e.time || e.event_time || "-"}`;
-        const node = document.createElement("div");
-        node.className = "item";
-        node.textContent = line;
-        list.appendChild(node);
-
-        const node2 = document.createElement("div");
-        node2.className = "item";
-        node2.textContent = line;
-        recent.appendChild(node2);
+    function eventConfidenceText(eventRow) {
+      const metadata = eventRow.metadata || {};
+      const score = metadata.best_support_score || metadata.best_yolo_confidence || metadata.support_score || null;
+      if (typeof score === "number") {
+        return `${(score * 100).toFixed(1)}%`;
       }
+      return "-";
+    }
+
+    function eventStatusInfo(eventRow) {
+      const metadata = eventRow.metadata || {};
+      const status = metadata.processing_status || "완료";
+      if (status === "대기") {
+        return { label: "대기", className: "badge badge-warning" };
+      }
+      if (status === "처리중") {
+        return { label: "처리중", className: "badge badge-info" };
+      }
+      return { label: "완료", className: "badge badge-complete" };
+    }
+
+    function falsePositiveLabel(eventRow) {
+      const metadata = eventRow.metadata || {};
+      return metadata.false_positive_check || "정상";
+    }
+
+    function formatDateTime(value) {
+      if (!value) {
+        return "-";
+      }
+      const date = new Date(value);
+      if (Number.isNaN(date.getTime())) {
+        return value;
+      }
+      return date.toLocaleString("ko-KR", {
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit",
+        hour: "2-digit",
+        minute: "2-digit",
+        second: "2-digit",
+      });
+    }
+
+    function isToday(value) {
+      const date = new Date(value);
+      if (Number.isNaN(date.getTime())) {
+        return false;
+      }
+      const now = new Date();
+      return date.getFullYear() === now.getFullYear()
+        && date.getMonth() === now.getMonth()
+        && date.getDate() === now.getDate();
+    }
+
+    function getFilteredEventsForList() {
+      const typeValue = document.getElementById("eventTypeFilter")?.value || "";
+      const hourValue = document.getElementById("eventTimeFilter")?.value || "all";
+
+      return state.events.filter((eventRow) => {
+        if (typeValue && eventRow.event_type !== typeValue) {
+          return false;
+        }
+
+        if (state.selectedCctvId && String(eventRow.cctv_id) !== String(state.selectedCctvId)) {
+          return false;
+        }
+
+        if (hourValue !== "all") {
+          const date = new Date(eventRow.timestamp || eventRow.event_time);
+          if (Number.isNaN(date.getTime())) {
+            return false;
+          }
+          const diffHours = (Date.now() - date.getTime()) / (1000 * 60 * 60);
+          if (diffHours > Number(hourValue)) {
+            return false;
+          }
+        }
+
+        return true;
+      });
     }
 
     async function loadCctvs() {
       try {
-        const q = new URLSearchParams();
-        if (state.cctvRegion) q.set("region", state.cctvRegion);
-        const data = await apiGet(`/cctvs/?${q.toString()}`);
+        const params = new URLSearchParams();
+        if (state.cctvRegion) {
+          params.set("region", state.cctvRegion);
+        }
+
+        const query = params.toString();
+        const data = await apiGet(`/cctvs/${query ? `?${query}` : ""}`);
         state.cctvs = Array.isArray(data.items) ? data.items : [];
         renderCctvList();
+        renderDashboardCctvs();
+        renderSelectedCctvInfo();
         updateSiteMapMarkers();
-      } catch (err) {
+      } catch (error) {
         state.cctvs = [];
         renderCctvList();
-        log(document.getElementById("liveLog"), `CCTV 조회 실패: ${err.message}`);
+        renderDashboardCctvs();
+        renderSelectedCctvInfo();
+        console.error(`CCTV 조회 실패: ${error.message}`);
       }
     }
 
     async function loadEvents() {
-      const eventType = document.getElementById("eventTypeFilter").value;
-      const sort = document.getElementById("eventSortFilter").value;
       try {
-        const q = new URLSearchParams();
-        if (eventType) q.set("event_type", eventType);
-        q.set("sort", sort);
-        const data = await apiGet(`/events/?${q.toString()}`);
-        state.events = normalizeEventRows(data);
+        const data = await apiGet("/event?limit=200");
+        state.events = Array.isArray(data.items) ? data.items : [];
+        renderTodayInfo();
+        renderRecentEventsMain();
+        renderDashboardEvents();
         renderEvents();
-        document.getElementById("metricEventCall").textContent = "OK";
-      } catch (err) {
-        state.events = normalizeEventRows({});
+        renderDashboardCctvs();
+      } catch (error) {
+        state.events = [];
+        renderTodayInfo();
+        renderRecentEventsMain();
+        renderDashboardEvents();
         renderEvents();
-        document.getElementById("metricEventCall").textContent = "ERR";
+        renderDashboardCctvs();
       }
     }
 
-    async function loadNotifications() {
-      try {
-        await apiGet("/notifications/");
-        document.getElementById("metricNoti").textContent = "OK";
-      } catch {
-        document.getElementById("metricNoti").textContent = "ERR";
-      }
-    }
-
-    async function loadStream() {
-      const requestId = ++state.activeStreamRequestId;
-      const id = document.getElementById("cctvSelect").value;
-      if (!id) return;
-      const select = document.getElementById("cctvSelect");
-      const selected = select.options[select.selectedIndex];
-      const selectedUrl = selected ? selected.dataset.streamUrl : "";
-      const logEl = document.getElementById("liveLog");
-
-      try {
-        const streamUrl = selectedUrl || (await apiGet(`/cctvs/${id}/stream`)).stream_url;
-        if (!streamUrl) throw new Error("스트림 URL 없음");
-        if (requestId !== state.activeStreamRequestId) return;
-        await playLiveStream(streamUrl, id, requestId, "videoPanel", "liveLog");
-      } catch (err) {
-        if (requestId !== state.activeStreamRequestId) return;
-        document.getElementById("videoPanel").textContent = "LIVE 연결 실패";
-        log(logEl, `LIVE 연결 실패: ${err.message}`);
-      }
-    }
-
-    function renderScenarioBox(boxes) {
-      const boxEl = document.getElementById("scenarioBox");
-      if (!boxEl) return;
-      if (!Array.isArray(boxes) || !boxes.length) {
-        boxEl.classList.add("hidden");
+    function renderTodayInfo() {
+      const target = document.getElementById("todayInfoList");
+      if (!target) {
         return;
       }
 
-      const b = boxes[0];
-      const x = Math.max(0, Math.min(1, Number(b.x ?? 0)));
-      const y = Math.max(0, Math.min(1, Number(b.y ?? 0)));
-      const w = Math.max(0.05, Math.min(1, Number(b.w ?? 0.2)));
-      const h = Math.max(0.05, Math.min(1, Number(b.h ?? 0.2)));
-
-      boxEl.style.left = `${x * 100}%`;
-      boxEl.style.top = `${y * 100}%`;
-      boxEl.style.width = `${w * 100}%`;
-      boxEl.style.height = `${h * 100}%`;
-      boxEl.classList.remove("hidden");
+      const todayRows = state.events.filter((eventRow) => isToday(eventRow.timestamp || eventRow.event_time));
+      target.innerHTML = todayInfoConfig.map((item) => {
+        const count = todayRows.filter((eventRow) => eventRow.event_type === item.key).length;
+        return `
+          <div class="today-row">
+            ${buildEventTypeChip(item.key)}
+            <span class="today-count">${count}건</span>
+          </div>
+        `;
+      }).join("");
     }
 
-    async function callAndLog(url, label, bannerName = "") {
-      const resultEl = document.getElementById("testResult");
-      try {
-        const data = await apiPost(url);
-        log(resultEl, `${label} 성공: ${JSON.stringify(data)}`);
-        if (bannerName) {
-          showEventBanner(`${bannerName} 감지`);
+    function renderRecentEventsMain() {
+      const target = document.getElementById("recentEventsMain");
+      if (!target) {
+        return;
+      }
+
+      const rows = state.events.slice(0, 8);
+      if (!rows.length) {
+        target.innerHTML = '<div class="empty-box">최근 돌발 정보가 없습니다.</div>';
+        return;
+      }
+
+      target.innerHTML = rows.map((eventRow) => `
+          <div class="recent-row" data-event-id="${eventRow.id}">
+            <div>${formatDateTime(eventRow.timestamp || eventRow.event_time)}</div>
+            <div>${buildEventTypeChip(eventRow.event_type)}</div>
+            <div>${getCctvLocation(eventRow.cctv_id)}</div>
+          </div>
+        `).join("");
+    }
+
+    function renderSelectedCctvInfo() {
+      const selected = state.cctvs.find((item) => String(item.cctv_id) === String(state.selectedCctvId));
+      const mainTarget = document.getElementById("selectedCctvMeta");
+      const listTarget = document.getElementById("eventPageSelectedCctvMeta");
+
+      const emptyText = "선택된 CCTV가 없습니다.";
+      if (!selected) {
+        if (mainTarget) {
+          mainTarget.textContent = emptyText;
         }
-      } catch (err) {
-        log(resultEl, `${label} 실패: ${err.message}`);
+        if (listTarget) {
+          listTarget.textContent = emptyText;
+        }
+        return;
+      }
+
+      const html = `
+        <div>CCTV ID: ${selected.cctv_id}</div>
+        <div>설치지점명: ${selected.location || "위치 정보 없음"}</div>
+      `;
+
+      if (mainTarget) {
+        mainTarget.innerHTML = html;
+      }
+      if (listTarget) {
+        listTarget.innerHTML = html;
       }
     }
 
-    function showView() {
-      const detailMode = new URLSearchParams(location.search).get("detail") === "1";
-      state.siteMode = detailMode ? "detail" : "main";
+    function renderCctvList() {
+      const select = document.getElementById("cctvSelect");
+      if (!select) {
+        return;
+      }
 
-      document.getElementById("siteMainView").classList.toggle("hidden", detailMode);
-      document.getElementById("webView").classList.toggle("hidden", !detailMode);
-      document.getElementById("linkWeb").classList.add("active");
-      document.body.classList.remove("app-mode");
+      const keyword = (state.cctvKeyword || "").trim().toLowerCase();
+      let rows = state.cctvs;
+
+      if (keyword) {
+        rows = rows.filter((item) => {
+          const nameText = String(item.name || "").toLowerCase();
+          const locationText = String(item.location || "").toLowerCase();
+          const idText = String(item.cctv_id || "");
+          return nameText.includes(keyword) || locationText.includes(keyword) || idText.includes(keyword);
+        });
+      }
+
+      select.innerHTML = '<option value="">CCTV를 선택하세요</option>';
+      rows.forEach((item) => {
+        const option = document.createElement("option");
+        option.value = String(item.cctv_id);
+        option.textContent = item.name || `CCTV-${item.cctv_id}`;
+        select.appendChild(option);
+      });
+
+      select.value = state.selectedCctvId ? String(state.selectedCctvId) : "";
+    }
+
+    function renderDashboardCctvs() {
+      const target = document.getElementById("dashboardCctvTable");
+      if (!target) {
+        return;
+      }
+
+      const connectionFilter = document.getElementById("dashboardConnectionFilter")?.value || "all";
+      const analyzeFilter = document.getElementById("dashboardAnalyzeFilter")?.value || "all";
+
+      let rows = [...state.cctvs];
+      rows = rows.filter((item) => {
+        const connected = Boolean(item.stream_url);
+        const analyzed = state.events.some((eventRow) => String(eventRow.cctv_id) === String(item.cctv_id));
+
+        if (connectionFilter === "connected" && !connected) {
+          return false;
+        }
+        if (connectionFilter === "disconnected" && connected) {
+          return false;
+        }
+        if (analyzeFilter === "analyzed" && !analyzed) {
+          return false;
+        }
+        if (analyzeFilter === "idle" && analyzed) {
+          return false;
+        }
+        return true;
+      });
+
+      if (!rows.length) {
+        target.innerHTML = '<tr><td colspan="4">조회된 CCTV가 없습니다.</td></tr>';
+        return;
+      }
+
+      target.innerHTML = rows.map((item, index) => {
+        const connected = Boolean(item.stream_url);
+        const analyzed = state.events.some((eventRow) => String(eventRow.cctv_id) === String(item.cctv_id));
+        return `
+          <tr data-cctv-id="${item.cctv_id}">
+            <td>${index + 1}</td>
+            <td>${item.name || `CCTV-${item.cctv_id}`}</td>
+            <td><span class="${connected ? "badge badge-connected" : "badge badge-danger"}">${connected ? "연결됨" : "연결끊김"}</span></td>
+            <td><span class="${analyzed ? "badge badge-info" : "badge badge-warning"}">${analyzed ? "분석중" : "미분석"}</span></td>
+          </tr>
+        `;
+      }).join("");
+
+      target.querySelectorAll("tr[data-cctv-id]").forEach((row) => {
+        row.addEventListener("click", () => {
+          state.selectedCctvId = Number(row.dataset.cctvId);
+          renderSelectedCctvInfo();
+          renderCctvList();
+          renderEvents();
+          movePage("events", state.selectedCctvId);
+        });
+      });
+    }
+
+    function renderDashboardEvents() {
+      const target = document.getElementById("dashboardEventTable");
+      if (!target) {
+        return;
+      }
+
+      if (!state.events.length) {
+        target.innerHTML = '<tr><td colspan="7">조회된 돌발상황이 없습니다.</td></tr>';
+        return;
+      }
+
+      target.innerHTML = state.events.slice(0, 30).map((eventRow) => {
+        const status = eventStatusInfo(eventRow);
+        return `
+          <tr data-event-id="${eventRow.id}">
+            <td>${formatDateTime(eventRow.timestamp || eventRow.event_time)}</td>
+            <td>${eventRow.id}</td>
+            <td>${getCctvLocation(eventRow.cctv_id)}</td>
+            <td>${buildEventTypeChip(eventRow.event_type)}</td>
+            <td>${eventConfidenceText(eventRow)}</td>
+            <td>${falsePositiveLabel(eventRow)}</td>
+            <td><span class="${status.className}">${status.label}</span></td>
+          </tr>
+        `;
+      }).join("");
+
+      target.querySelectorAll("tr[data-event-id]").forEach((row) => {
+        row.addEventListener("click", () => openEventModal(Number(row.dataset.eventId)));
+      });
+    }
+
+    function renderEvents() {
+      const target = document.getElementById("eventList");
+      if (!target) {
+        return;
+      }
+
+      const rows = getFilteredEventsForList();
+      if (!rows.length) {
+        target.innerHTML = '<div class="empty-box">조건에 맞는 돌발상황이 없습니다.</div>';
+        return;
+      }
+
+      target.innerHTML = rows.map((eventRow) => `
+        <div class="event-side-item" data-event-id="${eventRow.id}">
+          <div>${formatDateTime(eventRow.timestamp || eventRow.event_time)}</div>
+          <div>${buildEventTypeChip(eventRow.event_type)}</div>
+          <div>${getCctvLocation(eventRow.cctv_id)}</div>
+        </div>
+      `).join("");
     }
 
     async function initSiteMainMap() {
@@ -1114,118 +1923,318 @@
       }
 
       await ensureLeafletLibrary();
-      state.siteMap = window.L.map("siteMainMap").setView([36.35, 127.85], 7);
+      state.siteMap = window.L.map("siteMainMap").setView([37.55, 126.98], 10);
       window.L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-        attribution: '&copy; OpenStreetMap contributors',
+        attribution: "&copy; OpenStreetMap contributors",
       }).addTo(state.siteMap);
+
       updateSiteMapMarkers();
     }
 
-    async function openSiteCctv(cctv) {
-      const meta = document.getElementById("selectedCctvMeta");
-      meta.innerHTML = `
-        <div><strong>${cctv.name || `CCTV ${cctv.cctv_id}`}</strong></div>
-        <div>위치: ${cctv.location || "정보 없음"}</div>
-        <div>좌표: ${cctv.latitude || "-"}, ${cctv.longitude || "-"}</div>
-      `;
-
-      const requestId = ++state.activeStreamRequestId;
-      const streamUrl = cctv.stream_url || (await getFreshStreamUrl(cctv.cctv_id));
-      if (!streamUrl) {
-        document.getElementById("siteLivePanel").textContent = "CCTV LIVE 연결 실패";
+    function updateSiteMapMarkers() {
+      if (!state.siteMap || !window.L) {
         return;
       }
-      await playLiveStream(streamUrl, cctv.cctv_id, requestId, "siteLivePanel", "siteLiveLog");
-    }
 
-    function updateSiteMapMarkers() {
-      if (!state.siteMap || !window.L) return;
-      for (const marker of state.siteMapMarkers) {
-        state.siteMap.removeLayer(marker);
-      }
+      state.siteMapMarkers.forEach((marker) => marker.remove());
       state.siteMapMarkers = [];
 
       const bounds = [];
-      for (const c of state.cctvs) {
-        const lat = Number.parseFloat(c.latitude ?? c.lat ?? c.raw?.coordy ?? c.raw?.y);
-        const lng = Number.parseFloat(c.longitude ?? c.lon ?? c.lng ?? c.raw?.coordx ?? c.raw?.x);
-        if (!Number.isFinite(lat) || !Number.isFinite(lng)) continue;
-        const marker = window.L.circleMarker([lat, lng], {
-          radius: 5,
-          color: "#0f766e",
-          weight: 2,
-          fillColor: "#14b8a6",
-          fillOpacity: 0.85,
+      state.cctvs.forEach((item, index) => {
+        const point = getDisplayCoordinates(item, index);
+        // 원형 점 대신 CCTV 이모지 마커를 사용합니다.
+        const cctvIcon = window.L.divIcon({
+          className: "",
+          html: '<div class="cctv-map-marker" aria-label="CCTV 마커">📹</div>',
+          iconSize: [34, 34],
+          iconAnchor: [17, 17],
+          tooltipAnchor: [0, -18],
+        });
+        const marker = window.L.marker([point.lat, point.lng], {
+          icon: cctvIcon,
         }).addTo(state.siteMap);
-        marker.bindTooltip(c.name || `CCTV ${c.cctv_id}`);
-        marker.on("click", () => openSiteCctv(c));
+
+        marker.bindTooltip(item.name || `CCTV-${item.cctv_id}`);
+        marker.on("click", async () => {
+          state.selectedCctvId = Number(item.cctv_id);
+          renderSelectedCctvInfo();
+          renderCctvList();
+          renderEvents();
+          await loadStream(true);
+        });
+
         state.siteMapMarkers.push(marker);
-        bounds.push([lat, lng]);
-      }
+        bounds.push([point.lat, point.lng]);
+      });
 
       if (bounds.length) {
-        state.siteMap.fitBounds(bounds, { padding: [24, 24] });
+        state.siteMap.fitBounds(bounds, { padding: [30, 30] });
         if (state.siteMap.getZoom() > 13) {
           state.siteMap.setZoom(13);
         }
       }
     }
 
-    async function runScenario(type) {
-      const config = scenarioMap[type];
-      if (!config) return;
+    async function getFreshStreamUrl(cctvId) {
+      const data = await apiGet(`/cctvs/${cctvId}/stream`);
+      return data.stream_url || "";
+    }
 
-      setActiveScenarioButton(type);
-      const preview = document.getElementById("scenarioVideo");
-      const result = document.getElementById("scenarioResult");
-      renderScenarioBox([]);
-      openScenarioOverlay(`${config.label} 감지 테스트`);
-      showEventBanner(`${config.label} 감지`);
+    async function playLiveStream(streamUrl, cctvId, requestId, panelId = "videoPanel") {
+      const panel = document.getElementById(panelId);
+      if (!panel) {
+        return;
+      }
 
-      try {
-        const response = await apiPost(config.endpoint);
-        result.textContent = JSON.stringify(response, null, 2);
-        if (type === "floating_object") {
-          const streamUrl = response?.details?.stream_url || "/abandoned-object/floating-stream";
-          const durationSec = Number(response?.details?.duration_sec || 0);
-          renderScenarioBox([]);
-          playFloatingRealtimeStream(streamUrl, durationSec);
-        } else {
-          await playScenarioVideo(preview, config.video, "/abandoned-object/floating-video");
-          const boxesFromApi = response?.details?.boxes || [];
-          const boxes = boxesFromApi.length ? boxesFromApi : (fallbackScenarioBoxes[type] || []);
-          renderScenarioBox(boxes);
+      destroyActiveHls();
+      panel.innerHTML = "";
+
+      const normalizedUrl = String(streamUrl || "").trim();
+      if (!normalizedUrl) {
+        panel.textContent = "LIVE 주소가 없습니다.";
+        return;
+      }
+
+      if (normalizedUrl.endsWith(".m3u8")) {
+        const video = document.createElement("video");
+        video.controls = true;
+        video.autoplay = true;
+        video.muted = true;
+        video.playsInline = true;
+        panel.appendChild(video);
+
+        try {
+          await ensureHlsLibrary();
+          if (window.Hls && window.Hls.isSupported()) {
+            const hls = new window.Hls();
+            state.activeHls = hls;
+            hls.loadSource(normalizedUrl);
+            hls.attachMedia(video);
+            hls.on(window.Hls.Events.MANIFEST_PARSED, () => {
+              if (requestId !== state.activeStreamRequestId) {
+                return;
+              }
+              video.play().catch(() => {});
+            });
+            return;
+          }
+        } catch (error) {
+          console.error(`HLS 로드 실패: ${error.message}`);
         }
-        await loadEvents();
-      } catch (err) {
-        result.textContent = `${config.label} 테스트 실패: ${err.message}`;
-        hideEventBanner();
+      }
+
+      if (normalizedUrl.startsWith("http://") || normalizedUrl.startsWith("https://")) {
+        if (normalizedUrl.endsWith(".mp4")) {
+          const video = document.createElement("video");
+          video.controls = true;
+          video.autoplay = true;
+          video.muted = true;
+          video.playsInline = true;
+          video.src = normalizedUrl;
+          panel.appendChild(video);
+          return;
+        }
+
+        const iframe = document.createElement("iframe");
+        iframe.src = normalizedUrl;
+        iframe.allowFullscreen = true;
+        panel.appendChild(iframe);
+        return;
+      }
+
+      panel.innerHTML = `
+        <div style="padding: 20px; text-align: center;">
+          <div style="margin-bottom: 10px;">브라우저에서 직접 재생할 수 없는 스트림입니다.</div>
+          <a href="${normalizedUrl}" target="_blank" rel="noreferrer">새 창에서 열기</a>
+        </div>
+      `;
+    }
+
+    async function loadStream(useMainPanel = false) {
+      const requestId = ++state.activeStreamRequestId;
+      const select = document.getElementById("cctvSelect");
+      const selectedId = state.selectedCctvId || Number(select?.value || 0);
+      if (!selectedId) {
+        return;
+      }
+
+      state.selectedCctvId = Number(selectedId);
+      renderSelectedCctvInfo();
+
+      const targetPanelId = useMainPanel ? "siteLivePanel" : "videoPanel";
+      try {
+        const streamUrl = await getFreshStreamUrl(selectedId);
+        await playLiveStream(streamUrl, selectedId, requestId, targetPanelId);
+      } catch (error) {
+        const panel = document.getElementById(targetPanelId);
+        if (panel) {
+          panel.textContent = "LIVE 연결 실패";
+        }
+        console.error(`LIVE 연결 실패: ${error.message}`);
       }
     }
 
-    function bindActions() {
-      const scenarioVideo = document.getElementById("scenarioVideo");
-      if (scenarioVideo) {
-        scenarioVideo.onended = () => closeScenarioOverlay();
+    function showEventBanner(message) {
+      const banner = document.getElementById("eventBanner");
+      if (!banner) {
+        return;
       }
-      document.addEventListener("keydown", (e) => {
-        const overlay = document.getElementById("scenarioOverlay");
-        if (!overlay || overlay.classList.contains("hidden")) return;
-        if (e.key === "q" || e.key === "Q") {
-          closeScenarioOverlay();
+      banner.textContent = message;
+      banner.classList.remove("hidden");
+
+      clearTimeout(state.scenarioCloseTimer);
+      state.scenarioCloseTimer = window.setTimeout(() => {
+        banner.classList.add("hidden");
+      }, 2800);
+    }
+
+    async function callAndLog(url, label, bannerName = "") {
+      try {
+        const data = await apiPost(url);
+        renderAnalysisResult([
+          {
+            title: label,
+            detail: JSON.stringify(data, null, 2),
+          },
+        ]);
+        if (bannerName) {
+          showEventBanner(`${bannerName} 감지 요청 완료`);
+        }
+        await loadEvents();
+      } catch (error) {
+        renderAnalysisResult([
+          {
+            title: `${label} 실패`,
+            detail: error.message,
+          },
+        ]);
+      }
+    }
+
+    async function runScenario(type) {
+      const config = scenarioMap[type];
+      if (!config) {
+        return;
+      }
+
+      document.querySelectorAll(".scenario-btn").forEach((button) => {
+        button.classList.remove("active");
+      });
+
+      const buttonMap = {
+        fire: "scenarioFire",
+        wrong_way: "scenarioWrongWay",
+        traffic_jam: "scenarioTrafficJam",
+        abandoned_object: "scenarioAbandoned",
+        emergency_vehicle: "scenarioEmergency",
+      };
+
+      const activeButton = document.getElementById(buttonMap[type]);
+      if (activeButton) {
+        activeButton.classList.add("active");
+      }
+
+      openScenarioModal(config);
+      showEventBanner(`${config.label} 감지 테스트 실행`);
+      await callAndLog(config.endpoint, `${config.label} 감지 테스트`, config.label);
+    }
+
+    async function openEventModal(eventId) {
+      state.selectedEventId = eventId;
+
+      try {
+        const data = await apiGet(`/event/${eventId}`);
+        const localEvent = state.events.find((item) => Number(item.id) === Number(eventId));
+        const mergedMetadata = {
+          ...((data && data.metadata) || {}),
+          ...((localEvent && localEvent.metadata) || {}),
+        };
+        const modal = document.getElementById("eventModal");
+        modal.classList.remove("hidden");
+
+        const imageBox = document.getElementById("modalImageBox");
+        if (data.image_url) {
+          imageBox.innerHTML = `<img src="${data.image_url}" alt="감지 이미지" />`;
+        } else {
+          imageBox.textContent = "감지 이미지가 없습니다.";
+        }
+
+        document.getElementById("modalEventTime").textContent = formatDateTime(data.timestamp || data.event_time);
+        document.getElementById("modalEventId").textContent = data.id || "-";
+        document.getElementById("modalEventLocation").textContent = getCctvLocation(data.cctv_id);
+        document.getElementById("modalEventType").textContent = eventTypeLabel(data.event_type);
+        document.getElementById("modalEventConfidence").textContent = eventConfidenceText(data);
+        document.getElementById("modalProcessStatus").value = mergedMetadata.processing_status || "완료";
+        document.getElementById("modalMemo").value = "";
+
+        const radios = document.querySelectorAll('input[name="falsePositiveCheck"]');
+        radios.forEach((radio) => {
+          radio.checked = radio.value === (mergedMetadata.false_positive_check || "정상");
+        });
+      } catch (error) {
+        alert(`상세 정보를 불러오지 못했습니다.\n${error.message}`);
+      }
+    }
+
+    function saveEventModalState() {
+      if (!state.selectedEventId) {
+        return;
+      }
+
+      const selectedRadio = document.querySelector('input[name="falsePositiveCheck"]:checked');
+      const selectedFalsePositive = selectedRadio ? selectedRadio.value : "정상";
+      const selectedStatus = document.getElementById("modalProcessStatus").value;
+
+      state.events = state.events.map((eventRow) => {
+        if (Number(eventRow.id) !== Number(state.selectedEventId)) {
+          return eventRow;
+        }
+
+        const nextMetadata = {
+          ...(eventRow.metadata || {}),
+          false_positive_check: selectedFalsePositive,
+          processing_status: selectedStatus,
+        };
+
+        return {
+          ...eventRow,
+          metadata: nextMetadata,
+        };
+      });
+
+      renderDashboardEvents();
+      renderTodayInfo();
+      renderRecentEventsMain();
+      closeEventModal();
+    }
+
+    function closeEventModal() {
+      document.getElementById("eventModal").classList.add("hidden");
+    }
+
+    function bindActions() {
+      document.querySelectorAll("#eventModal .detail-field").forEach((field) => {
+        if (field.querySelector("label") && field.children.length === 1) {
+          field.remove();
         }
       });
 
-      document.getElementById("btnLoadStream").onclick = loadStream;
-      document.getElementById("btnRefresh").onclick = async () => {
-        await loadCctvs();
-        await loadEvents();
-      };
+      document.getElementById("btnIncidentListMenu").onclick = () => movePage("events");
+      document.getElementById("btnOpenDetail").onclick = () => movePage("dashboard");
+      document.getElementById("scenarioGroupTitle").onclick = () => toggleScenarioButtons();
+
+      document.getElementById("scenarioFire").onclick = () => runScenario("fire");
+      document.getElementById("scenarioWrongWay").onclick = () => runScenario("wrong_way");
+      document.getElementById("scenarioTrafficJam").onclick = () => runScenario("traffic_jam");
+      document.getElementById("scenarioAbandoned").onclick = () => runScenario("abandoned_object");
+      document.getElementById("scenarioEmergency").onclick = () => runScenario("emergency_vehicle");
+
       document.getElementById("btnCctvSearch").onclick = async () => {
         state.cctvRegion = document.getElementById("cctvRegion").value.trim();
         state.cctvKeyword = document.getElementById("cctvKeyword").value.trim();
         await loadCctvs();
       };
+
       document.getElementById("btnCctvReset").onclick = async () => {
         state.cctvRegion = "";
         state.cctvKeyword = "";
@@ -1233,60 +2242,109 @@
         document.getElementById("cctvKeyword").value = "";
         await loadCctvs();
       };
-      document.getElementById("cctvKeyword").addEventListener("keydown", async (e) => {
-        if (e.key === "Enter") {
-          state.cctvKeyword = e.currentTarget.value.trim();
-          await loadCctvs();
-        }
-      });
-      document.getElementById("scenarioFire").onclick = () => runScenario("fire");
-      document.getElementById("scenarioWrongWay").onclick = () => runScenario("wrong_way");
-      document.getElementById("scenarioTrafficJam").onclick = () => runScenario("traffic_jam");
-      document.getElementById("scenarioFloating").onclick = () => runScenario("floating_object");
-      document.getElementById("scenarioAbandoned").onclick = () => runScenario("abandoned_object");
-      document.getElementById("scenarioEmergency").onclick = () => runScenario("emergency_vehicle");
-      document.getElementById("closeScenarioOverlay").onclick = () => closeScenarioOverlay();
-      document.getElementById("btnOpenDetail").onclick = () => {
-        const url = new URL(window.location.href);
-        url.searchParams.set("detail", "1");
-        window.location.href = url.pathname + url.search;
-      };
-      document.getElementById("btnLoadEvents").onclick = loadEvents;
 
-      document.getElementById("btnUpload").onclick = () => callAndLog("/tests/video/upload", "영상 업로드");
+      document.getElementById("cctvSelect").onchange = () => {
+        state.selectedCctvId = Number(document.getElementById("cctvSelect").value || 0) || null;
+        renderSelectedCctvInfo();
+        renderCctvList();
+        renderEvents();
+      };
+
+      document.getElementById("btnLoadStream").onclick = () => loadStream(false);
+      document.getElementById("btnRefresh").onclick = async () => {
+        await loadCctvs();
+        renderEvents();
+      };
+      document.getElementById("btnLoadEvents").onclick = () => renderEvents();
+
+      document.getElementById("dashboardConnectionFilter").onchange = renderDashboardCctvs;
+      document.getElementById("dashboardAnalyzeFilter").onchange = renderDashboardCctvs;
+
+      document.getElementById("uploadDropZone").onclick = () => document.getElementById("uploadFileInput").click();
+      document.getElementById("btnUpload").onclick = () => document.getElementById("uploadFileInput").click();
+      document.getElementById("uploadFileInput").onchange = (event) => {
+        const file = event.target.files && event.target.files[0] ? event.target.files[0] : null;
+        state.uploadedFile = file;
+        updateUploadFileName();
+        if (file) {
+          renderAnalysisResult([
+            {
+              title: "업로드 준비 완료",
+              detail: `${file.name} (${Math.round(file.size / 1024)}KB)`,
+            },
+          ]);
+        }
+      };
       document.getElementById("btnAnalyze").onclick = async () => {
+        const rows = [];
+        if (state.uploadedFile) {
+          rows.push({
+            title: "업로드 파일",
+            detail: state.uploadedFile.name,
+          });
+        }
+        rows.push({
+          title: "AI 분석",
+          detail: "서버 분석 요청을 실행했습니다.",
+        });
+        renderAnalysisResult(rows);
         await callAndLog("/tests/video/analyze", "AI 분석");
         try {
-          const res = await apiGet("/tests/result");
-          log(document.getElementById("testResult"), `결과 조회: ${JSON.stringify(res)}`);
-        } catch (err) {
-          log(document.getElementById("testResult"), `결과 조회 실패: ${err.message}`);
+          const result = await apiGet("/tests/result");
+          renderAnalysisResult([
+            {
+              title: "AI 분석",
+              detail: JSON.stringify(result, null, 2),
+            },
+          ]);
+        } catch (error) {
+          renderAnalysisResult([
+            {
+              title: "결과 조회 실패",
+              detail: error.message,
+            },
+          ]);
         }
       };
 
-      document.getElementById("btnDetectFire").onclick = () => callAndLog("/fire/detect", "화재 감지", "화재");
-      document.getElementById("btnDetectJam").onclick = () => callAndLog("/traffic-jam/detect", "교통체증 감지", "교통체증");
-      document.getElementById("btnDetectWrong").onclick = () => callAndLog("/wrong-way/detect", "역주행 감지", "역주행");
-      document.getElementById("btnDetectFloating").onclick = () => callAndLog("/abandoned-object/detect-floating", "부유물 감지", "부유물");
-      document.getElementById("btnDetectAbandoned").onclick = () => callAndLog("/abandoned-object/detect", "부화물 감지", "부화물");
-      document.getElementById("btnDetectEmergency").onclick = () => callAndLog("/emergency-vehicle/detect", "긴급차량 감지", "긴급차량");
+      document.getElementById("closeEventModal").onclick = closeEventModal;
+      document.getElementById("saveEventModal").onclick = saveEventModalState;
+      document.getElementById("closeScenarioModal").onclick = closeScenarioModal;
+      document.getElementById("eventModal").addEventListener("click", (event) => {
+        if (event.target.id === "eventModal") {
+          closeEventModal();
+        }
+      });
+      document.getElementById("scenarioModal").addEventListener("click", (event) => {
+        if (event.target.id === "scenarioModal") {
+          closeScenarioModal();
+        }
+      });
+    }
+
+    function toggleScenarioButtons(forceOpen = null) {
+      const group = document.getElementById("scenarioButtonGroup");
+      const icon = document.getElementById("scenarioToggleIcon");
+      const title = document.getElementById("scenarioGroupTitle");
+      if (!group || !icon || !title) {
+        return;
+      }
+
+      const shouldOpen = forceOpen === null ? group.classList.contains("hidden") : forceOpen;
+      group.classList.toggle("hidden", !shouldOpen);
+      icon.textContent = shouldOpen ? "▲" : "▼";
+      title.classList.remove("active");
     }
 
     async function init() {
       showView();
       bindActions();
-      await Promise.all([loadCctvs(), loadEvents(), loadNotifications()]);
-      if (!document.getElementById("siteMainView").classList.contains("hidden")) {
-        await initSiteMainMap();
-      }
-
-      const wsUrl = `${location.protocol === "https:" ? "wss" : "ws"}://${location.host}/events/ws`;
-      try {
-        const ws = new WebSocket(wsUrl);
-        ws.onmessage = (ev) => log(document.getElementById("liveLog"), `WS 이벤트: ${ev.data}`);
-      } catch (_) {
-        // Ignore websocket init failure in local preview.
-      }
+      toggleScenarioButtons(true);
+      updateUploadFileName();
+      renderAnalysisResult([]);
+      await Promise.all([loadCctvs(), loadEvents()]);
+      restoreSelectedCctvFromUrl();
+      await initSiteMainMap();
     }
 
     init();
